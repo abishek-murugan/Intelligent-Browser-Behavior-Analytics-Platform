@@ -1,0 +1,15 @@
+project:
+  name: browser-behavior-analytics
+  version: 1.0.0
+  environment: development
+
+collection:
+  ram_log_interval: 5
+  history_sync_interval: 30
+
+session:
+  inactivity_threshold_minutes: 15
+
+privacy:
+  remove_query_strings: true
+  anonymize_paths: true
