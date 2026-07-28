@@ -3,13 +3,8 @@ paths:
   bronze: data/bronze
   silver: data/silver
   gold: data/gold
-
   history_db: ~/.config/google-chrome/Default/History
-
   ram_logs: data/raw/ram
-
   history_logs: data/raw/history
-
   models: models
-
   reports: reports
