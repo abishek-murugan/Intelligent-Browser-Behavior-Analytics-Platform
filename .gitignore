@@ -1,10 +1,47 @@
-# Python-generated files
+# Python
 __pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Virtual environments
-.venv
+# Virtual Environment
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Data
+data/raw/
+data/bronze/
+data/silver/
+data/gold/
+
+# Models
+models/*.pth
+models/*.pt
+models/*.onnx
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Reports
+reports/
+
+# Distribution
+dist/
+*.whl
+*.tar.gz
