@@ -1,21 +1,12 @@
 lstm:
-
   sequence_length: 10
-
   hidden_size: 128
-
   num_layers: 2
-
   dropout: 0.2
-
   learning_rate: 0.001
-
   epochs: 50
-
   batch_size: 32
 
 autoencoder:
-
   latent_dimension: 16
-
   threshold: 0.03
