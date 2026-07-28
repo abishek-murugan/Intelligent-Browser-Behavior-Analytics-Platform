@@ -1,11 +1,8 @@
 storage:
-
   container: browsing-data
 
 ml:
-
   workspace: behavior-analytics
 
 registry:
-
   model_name: lstm-browser-model
