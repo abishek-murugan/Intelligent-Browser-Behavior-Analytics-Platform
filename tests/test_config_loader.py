@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from src.exceptions import ConfigurationFileNotFoundError
 from src.utils.config_loader import ConfigLoader
 
 
@@ -17,7 +18,7 @@ def test_load_config():
 def test_missing_file():
     loader = ConfigLoader()
 
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ConfigurationFileNotFoundError):
         loader.load("missing.yaml")
 
 
