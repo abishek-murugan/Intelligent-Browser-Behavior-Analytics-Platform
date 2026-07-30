@@ -19,7 +19,7 @@ handlers:
     level: INFO
     formatter: standard
 
-    filename: logs/project.log
+    filename: logs/browser_behavior.log
 
     maxBytes: 10485760
 
