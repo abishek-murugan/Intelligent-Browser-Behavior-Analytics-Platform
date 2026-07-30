@@ -1,23 +1,21 @@
 """
 Centralized logging configuration.
 
-This module configures the application's logging system from
-config/logging.yaml and exposes a helper function to retrieve loggers.
+Configures the application's logging system from config/logging.yaml
+and provides a helper function for retrieving loggers.
 """
 
 from __future__ import annotations
 
 import logging
 import logging.config
-from pathlib import Path
 
-import yaml
-
-from src.utils.config_loader import CONFIG_DIR
-
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-LOG_DIR = PROJECT_ROOT / "logs"
+from src.constants import CONFIG_DIR, LOG_DIR
+from src.exceptions import (
+    ConfigurationError,
+    ConfigurationFileNotFoundError,
+)
+from src.utils.config_loader import get_logging
 
 
 def setup_logging() -> None:
@@ -26,8 +24,11 @@ def setup_logging() -> None:
 
     Raises
     ------
-    FileNotFoundError
-        If logging.yaml does not exist.
+    ConfigurationFileNotFoundError
+        If logging.yaml cannot be found.
+
+    ConfigurationError
+        If the logging configuration is invalid.
     """
 
     LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -35,14 +36,18 @@ def setup_logging() -> None:
     config_path = CONFIG_DIR / "logging.yaml"
 
     if not config_path.exists():
-        raise FileNotFoundError(
+        raise ConfigurationFileNotFoundError(
             f"Logging configuration not found: {config_path}"
         )
 
-    with config_path.open("r", encoding="utf-8") as file:
-        config = yaml.safe_load(file)
+    try:
+        config = get_logging()
+        logging.config.dictConfig(config)
 
-    logging.config.dictConfig(config)
+    except Exception as exc:
+        raise ConfigurationError(
+            "Failed to configure the logging system."
+        ) from exc
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -52,7 +57,7 @@ def get_logger(name: str) -> logging.Logger:
     Parameters
     ----------
     name : str
-        Usually __name__.
+        Logger name (typically __name__).
 
     Returns
     -------
@@ -60,6 +65,3 @@ def get_logger(name: str) -> logging.Logger:
     """
 
     return logging.getLogger(name)
-
-
-setup_logging()

@@ -1,51 +1,105 @@
+"""
+Centralized configuration loader.
+
+Loads YAML configuration files from the config directory.
+"""
+
+from __future__ import annotations
+
 from functools import lru_cache
-from pathlib import Path
 from typing import Any
 
 import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-CONFIG_DIR = PROJECT_ROOT / "config"
+from src.constants import CONFIG_DIR
+from src.exceptions import (
+    ConfigurationError,
+    ConfigurationFileNotFoundError,
+)
 
 
 class ConfigLoader:
     """Loads YAML configuration files."""
 
-    def __init__(self, config_dir: Path = CONFIG_DIR):
+    def __init__(self, config_dir=CONFIG_DIR):
         self.config_dir = config_dir
 
+    @lru_cache(maxsize=None)
     def load(self, filename: str) -> dict[str, Any]:
         """
         Load a YAML configuration file.
 
-        Args:
-            filename: Name of the YAML file.
+        Parameters
+        ----------
+        filename : str
+            YAML file name.
 
-        Returns:
-            Parsed configuration dictionary.
+        Returns
+        -------
+        dict[str, Any]
+            Parsed configuration.
 
-        Raises:
-            FileNotFoundError
-            ValueError
+        Raises
+        ------
+        ConfigurationFileNotFoundError
+            If the configuration file does not exist.
+
+        ConfigurationError
+            If the YAML is empty or invalid.
         """
 
         path = self.config_dir / filename
 
         if not path.exists():
-            raise FileNotFoundError(
+            raise ConfigurationFileNotFoundError(
                 f"Configuration file not found: {path}"
             )
 
-        with open(path, encoding="utf-8") as file:
-            config = yaml.safe_load(file)
+        try:
+            with path.open("r", encoding="utf-8") as file:
+                config = yaml.safe_load(file)
+
+        except yaml.YAMLError as exc:
+            raise ConfigurationError(
+                f"Invalid YAML in '{filename}'."
+            ) from exc
 
         if config is None:
-            raise ValueError(f"{filename} is empty.")
+            raise ConfigurationError(
+                f"Configuration file '{filename}' is empty."
+            )
 
         return config
 
 
-@lru_cache
+@lru_cache(maxsize=1)
 def get_config_loader() -> ConfigLoader:
+    """Return a cached ConfigLoader instance."""
     return ConfigLoader()
 
+
+loader = get_config_loader()
+
+
+def get_config() -> dict[str, Any]:
+    return loader.load("config.yaml")
+
+
+def get_paths() -> dict[str, Any]:
+    return loader.load("paths.yaml")
+
+
+def get_model() -> dict[str, Any]:
+    return loader.load("model.yaml")
+
+
+def get_logging() -> dict[str, Any]:
+    return loader.load("logging.yaml")
+
+
+def get_dashboard() -> dict[str, Any]:
+    return loader.load("dashboard.yaml")
+
+
+def get_azure() -> dict[str, Any]:
+    return loader.load("azure.yaml")
