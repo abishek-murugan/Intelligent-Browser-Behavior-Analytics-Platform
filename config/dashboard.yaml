@@ -1,4 +1,0 @@
-dashboard:
-  refresh_interval: 5
-  default_window: 5_days
-  max_domains: 20

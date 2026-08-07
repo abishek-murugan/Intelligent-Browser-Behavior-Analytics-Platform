@@ -2,6 +2,7 @@ project:
   name: browser-behavior-analytics
   version: 1.0.0
   environment: development
+  random_seed: 42
 
 collection:
   ram_log_interval: 5
@@ -13,3 +14,10 @@ session:
 privacy:
   remove_query_strings: true
   anonymize_paths: true
+
+dashboard:
+  refresh_interval: 30
+  default_theme: light
+
+recommendation:
+  top_k: 5

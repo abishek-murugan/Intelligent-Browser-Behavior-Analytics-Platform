@@ -1,12 +1,23 @@
-lstm:
-  sequence_length: 10
-  hidden_size: 128
-  num_layers: 2
-  dropout: 0.2
-  learning_rate: 0.001
-  epochs: 50
-  batch_size: 32
+machine_learning:
 
-autoencoder:
-  latent_dimension: 16
-  threshold: 0.03
+  pca:
+    variance_ratio: 0.95
+
+  kmeans:
+    max_clusters: 10
+    random_state: 42
+
+  isolation_forest:
+    contamination: auto
+    random_state: 42
+
+deep_learning:
+
+  lstm:
+    sequence_length: 10
+    hidden_size: 128
+    num_layers: 2
+    dropout: 0.2
+    learning_rate: 0.001
+    epochs: 50
+    batch_size: 32

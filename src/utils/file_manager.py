@@ -3,108 +3,131 @@ Centralized file and directory management utilities.
 """
 
 from __future__ import annotations
-import yaml
+
+import csv
 import shutil
 from pathlib import Path
-import csv
-from src.constants import ( BRONZE_DATA_DIR, 
-                           GOLD_DATA_DIR,
-                            LOG_DIR, 
-                            RAW_DATA_DIR, 
-                            SILVER_DATA_DIR, 
-                            MODEL_DIR )
-from src.exceptions import ( 
+from typing import Any
+
+import yaml
+
+from src.constants import (
+    BRONZE_DATA_DIR,
+    GOLD_DATA_DIR,
+    LOG_DIR,
+    MODEL_DIR,
+    RAW_DATA_DIR,
+    SILVER_DATA_DIR,
+)
+
+from src.exceptions import (
+    DirectoryCreationError,
     FileCopyError,
-    FileManagerError,)
+    FileDeletionError,
+    FileManagerError,
+    FileMoveError,
+    FileReadError,
+    FileWriteError,
+)
+
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 class FileManager:
-    """Utility class for file and directory operations."""
+    """
+    Utility class for common file and directory operations.
+    """
 
-    @staticmethod
-    def create_directory(path: str | Path) -> Path:
-        """
-        Create a directory if it does not exist.
-        """
+    def create_directory(self, path: str | Path) -> Path:
+        """Create a directory if it does not exist."""
         path = Path(path)
-        path.mkdir(parents=True, exist_ok=True)
+
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+
+        except OSError as exc:
+            raise DirectoryCreationError(
+                f"Unable to create directory: {path}"
+            ) from exc
 
         logger.info("Directory ensured: %s", path)
 
         return path
 
-    @staticmethod
-    def directory_exists(path: str | Path) -> bool:
-        """
-        Check whether a directory exists.
-        """
-        return Path(path).is_dir()
+    def ensure_project_directories(self) -> None:
+        """Create all required project directories."""
+
+        directories = (
+            LOG_DIR,
+            MODEL_DIR,
+            RAW_DATA_DIR,
+            BRONZE_DATA_DIR,
+            SILVER_DATA_DIR,
+            GOLD_DATA_DIR,
+        )
+
+        for directory in directories:
+            self.create_directory(directory)
+
+        logger.info("Project directories initialized.")
 
     @staticmethod
     def file_exists(path: str | Path) -> bool:
-        """
-        Check whether a file exists.
-        """
         return Path(path).is_file()
 
     @staticmethod
-    def create_parent_directory(path: str | Path) -> Path:
-        """
-        Create the parent directory for a file.
-        """
-        parent = Path(path).parent
-        parent.mkdir(parents=True, exist_ok=True)
+    def directory_exists(path: str | Path) -> bool:
+        return Path(path).is_dir()
 
-        logger.info("Parent directory ensured: %s", parent)
+    def copy_file(
+        self,
+        source: str | Path,
+        destination: str | Path,
+    ) -> Path:
+        """Copy a file."""
 
-        return parent
-
-    @staticmethod
-    def copy_file(source: str | Path, destination: str | Path) -> Path:
-        """
-        Copy a file.
-        """
         source = Path(source)
         destination = Path(destination)
 
-        if not source.exists():
-            raise FileNotFoundError(source)
+        if not source.is_file():
+            raise FileReadError(f"Source file not found: {source}")
 
-        destination.parent.mkdir(parents=True, exist_ok=True)
+        self.create_directory(destination.parent)
 
         try:
             shutil.copy2(source, destination)
 
-        except Exception as exc:
+        except OSError as exc:
             raise FileCopyError(
                 f"Unable to copy '{source}' to '{destination}'."
             ) from exc
 
         logger.info("Copied %s -> %s", source, destination)
 
-        return destination 
-    
-    @staticmethod
-    def move_file(source: str | Path, destination: str | Path) -> Path:
-        """
-        Move a file.
-        """
+        return destination
+
+    def move_file(
+        self,
+        source: str | Path,
+        destination: str | Path,
+    ) -> Path:
+        """Move a file."""
+
         source = Path(source)
         destination = Path(destination)
 
-        if not source.exists():
-            raise FileNotFoundError(source)
+        if not source.is_file():
+            raise FileReadError(f"Source file not found: {source}")
 
-        destination.parent.mkdir(parents=True, exist_ok=True)
+        self.create_directory(destination.parent)
 
         try:
             shutil.move(str(source), str(destination))
 
-        except Exception as exc:
-            raise FileManagerError(
+        except OSError as exc:
+            raise FileMoveError(
                 f"Unable to move '{source}' to '{destination}'."
             ) from exc
 
@@ -114,9 +137,8 @@ class FileManager:
 
     @staticmethod
     def delete_file(path: str | Path) -> None:
-        """
-        Delete a file.
-        """
+        """Delete a file."""
+
         path = Path(path)
 
         if not path.exists():
@@ -125,160 +147,159 @@ class FileManager:
         try:
             path.unlink()
 
-        except Exception as exc:
-            raise FileManagerError(
-                f"Unable to delete '{path}'."
+        except OSError as exc:
+            raise FileDeletionError(
+                f"Unable to delete file: {path}"
             ) from exc
 
-            logger.info("Deleted file %s", path)
+        logger.info("Deleted file: %s", path)
 
     @staticmethod
     def delete_directory(path: str | Path) -> None:
-        """
-        Delete a directory recursively.
-        """
+        """Delete a directory recursively."""
+
         path = Path(path)
+
+        if not path.exists():
+            return
 
         try:
             shutil.rmtree(path)
 
-        except Exception as exc:
-            raise FileManagerError(
-                f"Unable to delete '{path}'."
+        except OSError as exc:
+            raise FileDeletionError(
+                f"Unable to delete directory: {path}"
             ) from exc
 
-            logger.info("Deleted directory %s", path)
+        logger.info("Deleted directory: %s", path)
 
     @staticmethod
-    def list_files(path: str | Path, pattern: str = "*") -> list[Path]:
-        """
-        List files matching a pattern.
-        """
-        path = Path(path)
+    def list_files(
+        path: str | Path,
+        pattern: str = "*",
+    ) -> list[Path]:
+        """List files matching a pattern."""
 
-        return sorted(path.glob(pattern))
+        return sorted(Path(path).glob(pattern))
 
     @staticmethod
-    def file_size(path: str | Path) -> int:
-        """
-        Return file size in bytes.
-        """
+    def get_file_size(path: str | Path) -> int:
+        """Return file size in bytes."""
+
         path = Path(path)
 
-        if not path.exists():
-            raise FileNotFoundError(path)
+        if not path.is_file():
+            raise FileReadError(f"File not found: {path}")
 
         return path.stat().st_size
 
-    @staticmethod
-    def touch(path: str | Path) -> Path:
-        """
-        Create an empty file if it does not exist.
-        """
-        path = Path(path)
-
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.touch(exist_ok=True)
-
-        logger.info("Created file %s", path)
-
-        return path
-
-    @staticmethod
-    def ensure_project_directories() -> None:
-        """
-        Create all required project directories.
-        """
-
-        directories = [
-            LOG_DIR,
-            MODEL_DIR,
-            RAW_DATA_DIR,
-            BRONZE_DATA_DIR,
-            SILVER_DATA_DIR,
-            GOLD_DATA_DIR,
-         ]
-
-        for directory in directories:
-            directory.mkdir(parents=True, exist_ok=True)
-
-        logger.info("Project directories initialized.")
-
-    @staticmethod
-    def read_yaml(path: str | Path) -> dict:
-        """
-        Read a YAML file.
-        """
+    def read_yaml(
+        self,
+        path: str | Path,
+    ) -> dict[str, Any]:
+        """Read a YAML file."""
 
         path = Path(path)
 
-        if not path.exists():
-            raise FileNotFoundError(path)
+        if not path.is_file():
+            raise FileReadError(f"File not found: {path}")
 
-        with path.open("r", encoding="utf-8") as file:
-            return yaml.safe_load(file)
+        try:
+            with path.open("r", encoding="utf-8") as file:
+                return yaml.safe_load(file) or {}
 
-    @staticmethod
-    def write_yaml(path: str | Path, data: dict) -> Path:
-        """
-        Write data to a YAML file.
-        """
+        except yaml.YAMLError as exc:
+            raise FileReadError(
+                f"Invalid YAML file: {path}"
+            ) from exc
+
+    def write_yaml(
+        self,
+        path: str | Path,
+        data: dict[str, Any],
+    ) -> Path:
+        """Write a YAML file."""
 
         path = Path(path)
 
-        path.parent.mkdir(parents=True, exist_ok=True)
+        self.create_directory(path.parent)
 
-        with path.open("w", encoding="utf-8") as file:
-            yaml.safe_dump(
-                data,
-                file,
-                sort_keys=False,
-                allow_unicode=True,
+        try:
+            with path.open("w", encoding="utf-8") as file:
+                yaml.safe_dump(
+                    data,
+                    file,
+                    sort_keys=False,
+                    allow_unicode=True,
                 )
 
-            logger.info("YAML written: %s", path)
+        except OSError as exc:
+            raise FileWriteError(
+                f"Unable to write YAML: {path}"
+            ) from exc
+
+        logger.info("YAML written: %s", path)
 
         return path
 
-    @staticmethod
-    def write_csv(
+    def read_csv(
+        self,
         path: str | Path,
-        rows: list[dict],
-        fieldnames: list[str],
-        ) -> Path:
-        """
-        Write rows to a CSV file.
-        """
+    ) -> list[dict[str, str]]:
+        """Read a CSV file."""
 
         path = Path(path)
 
-        path.parent.mkdir(parents=True, exist_ok=True)
+        if not path.is_file():
+            raise FileReadError(f"File not found: {path}")
 
-        with path.open("w", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(
-                file,
-                fieldnames=fieldnames,
-            )
+        try:
+            with path.open(
+                "r",
+                newline="",
+                encoding="utf-8",
+            ) as file:
+                return list(csv.DictReader(file))
 
-            writer.writeheader()
-            writer.writerows(rows)
+        except OSError as exc:
+            raise FileReadError(
+                f"Unable to read CSV: {path}"
+            ) from exc
+
+    def write_csv(
+        self,
+        path: str | Path,
+        rows: list[dict[str, Any]],
+        fieldnames: list[str],
+    ) -> Path:
+        """Write rows to a CSV file."""
+
+        path = Path(path)
+
+        self.create_directory(path.parent)
+
+        try:
+            with path.open(
+                "w",
+                newline="",
+                encoding="utf-8",
+            ) as file:
+                writer = csv.DictWriter(
+                    file,
+                    fieldnames=fieldnames,
+                )
+
+                writer.writeheader()
+                writer.writerows(rows)
+
+        except OSError as exc:
+            raise FileWriteError(
+                f"Unable to write CSV: {path}"
+            ) from exc
 
         logger.info("CSV written: %s", path)
 
         return path
 
-    @staticmethod
-    def read_csv(path: str | Path) -> list[dict]:
-        """
-        Read a CSV file.
-        """
 
-        path = Path(path)
-
-        if not path.exists():
-            raise FileNotFoundError(path)
-
-        with path.open("r", newline="", encoding="utf-8") as file:
-            reader = csv.DictReader(file)
-
-        return list(reader)
+file_manager = FileManager()

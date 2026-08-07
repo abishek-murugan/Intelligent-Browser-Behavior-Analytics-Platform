@@ -10,10 +10,9 @@ from __future__ import annotations
 import logging
 import logging.config
 
-from src.constants import CONFIG_DIR, LOG_DIR
+from src.constants import LOG_DIR
 from src.exceptions import (
     ConfigurationError,
-    ConfigurationFileNotFoundError,
 )
 from src.utils.config_loader import get_logging
 
@@ -22,23 +21,15 @@ def setup_logging() -> None:
     """
     Configure the application's logging system.
 
+    This function should be called once during application startup.
+
     Raises
     ------
-    ConfigurationFileNotFoundError
-        If logging.yaml cannot be found.
-
     ConfigurationError
         If the logging configuration is invalid.
     """
 
     LOG_DIR.mkdir(parents=True, exist_ok=True)
-
-    config_path = CONFIG_DIR / "logging.yaml"
-
-    if not config_path.exists():
-        raise ConfigurationFileNotFoundError(
-            f"Logging configuration not found: {config_path}"
-        )
 
     try:
         config = get_logging()
@@ -46,7 +37,7 @@ def setup_logging() -> None:
 
     except Exception as exc:
         raise ConfigurationError(
-            "Failed to configure the logging system."
+            "Failed to initialize the logging system."
         ) from exc
 
 
@@ -62,6 +53,11 @@ def get_logger(name: str) -> logging.Logger:
     Returns
     -------
     logging.Logger
+        Configured logger instance.
     """
 
     return logging.getLogger(name)
+
+
+# Configure logging immediately when this module is imported.
+setup_logging()

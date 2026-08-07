@@ -14,4 +14,8 @@ paths:
 
   logs: logs
 
+  databricks_notebooks: notebooks
+
   chrome_history_database: ~/.config/google-chrome/Default/History
+
+  ram_log: data/raw/ram_usage.csv

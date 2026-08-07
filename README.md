@@ -1,56 +1,10 @@
 # Time-Based Browsing Pattern Analyzer
 
-Deep learning analysis of time-based browsing patterns with RAM usage correlation.
+### Deep learning analysis of time-based browsing patterns with RAM usage correlation.
 
-## Project Structure
+Modern web users generate thousands of browsing events every day. Organizations can use this behavioral data to understand productivity, browsing habits, predict future user behavior, detect anomalies, and generate personalized recommendations. This project builds an end-to-end analytics platform that processes browser history and system usage logs using Databricks and PySpark, applies machine learning and deep learning models to extract insights, and presents them through an interactive dashboard.
 
-```
-├── config/            YAML configuration files
-├── src/
-│   ├── collector/     Data collection (RAM, browser history)
-│   ├── dashboard/     Visualization dashboard
-│   ├── models/        Deep learning models (LSTM, autoencoder)
-│   ├── preprocessing/ Data pipeline and feature engineering
-│   ├── recommendation/ Recommendation engine
-│   └── utils/         Shared utilities (config loader, etc.)
-├── tests/             Test suite
-└── pyproject.toml     Project metadata and dependencies
-```
+### Domain
 
-## Quick Start
+Productivity & Digital Behavior Analytics Platform
 
-```bash
-# Install dependencies
-uv sync
-
-# Install package in editable mode
-uv pip install -e .
-
-# Run tests
-uv run pytest
-
-# Lint
-uv run ruff check .
-```
-
-## Configuration
-
-All configuration lives in `config/` as YAML files:
-
-| File              | Purpose                        |
-|-------------------|--------------------------------|
-| `config.yaml`     | General project settings       |
-| `paths.yaml`      | Data and artifact paths        |
-| `models.yaml`     | Model hyperparameters          |
-| `logging.yaml`    | Logging configuration          |
-| `azure.yaml`      | Azure/Azure ML settings        |
-| `dashboard.yaml`  | Dashboard refresh and defaults |
-
-## Development
-
-```bash
-uv sync --group dev
-uv run pytest
-uv run ruff check .
-uv run ruff format .
-```
