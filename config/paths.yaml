@@ -1,21 +1,17 @@
 paths:
-
   raw_data: data/raw
-
   bronze_data: data/bronze
-
   silver_data: data/silver
-
   gold_data: data/gold
 
   models: models
-
   reports: reports
-
   logs: logs
 
-  databricks_notebooks: notebooks
-
   chrome_history_database: ~/.config/google-chrome/Default/History
+  chrome_history_raw: data/raw/chrome_history.parquet
 
   ram_log: data/raw/ram_usage.csv
+  ram_data_raw: data/raw/ram_usage.parquet
+
+  databricks_notebooks: notebooks
