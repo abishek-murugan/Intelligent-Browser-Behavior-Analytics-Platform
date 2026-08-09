@@ -20,11 +20,13 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
+    "matplotlib>=3.11.1",
     "pandas>=3.0.5",
     "pyarrow>=25.0.0",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
     "pyyaml>=6.0.3",
+    "seaborn>=0.13.2",
     "torch>=2.13.0",
 ]
 
