@@ -14,4 +14,6 @@ paths:
   ram_log: data/raw/ram_usage.csv
   ram_data_raw: data/raw/ram_usage.parquet
 
+  browser_ram_aligned: data/silver/browser_ram_aligned.parquet
+
   databricks_notebooks: notebooks
