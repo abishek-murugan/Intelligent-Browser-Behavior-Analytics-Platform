@@ -19,7 +19,7 @@ logs/
 
 # Data
 data/raw/
-data/bronze/
+data/data_utils/
 data/silver/
 data/gold/
 
