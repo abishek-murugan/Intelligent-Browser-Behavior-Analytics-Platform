@@ -85,6 +85,8 @@ class TemporalFeatureBuilder:
 
         feature_columns = [
             "session_id",
+            "session_start",
+            "session_end",
             "hour",
             "day_of_week_num",
             "is_weekend",
