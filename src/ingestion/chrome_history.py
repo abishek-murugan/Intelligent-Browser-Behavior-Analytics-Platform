@@ -23,7 +23,6 @@ from src.exceptions import (
 from src.utils.config_loader import get_paths
 from src.utils.logger import get_logger
 
-
 logger = get_logger(__name__)
 
 
@@ -231,7 +230,7 @@ class ChromeHistoryCollector:
                 unit="us",
             )
         )
-    
+
     def save(
         self,
         dataframe: pd.DataFrame,

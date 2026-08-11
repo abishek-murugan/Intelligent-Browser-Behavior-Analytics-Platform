@@ -1,11 +1,10 @@
-from pathlib import Path
 import logging
+from pathlib import Path
 
 from src.utils.logger import (
     get_logger,
     setup_logging,
 )
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 

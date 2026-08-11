@@ -19,17 +19,14 @@ from src.constants import (
     RAW_DATA_DIR,
     SILVER_DATA_DIR,
 )
-
 from src.exceptions import (
     DirectoryCreationError,
     FileCopyError,
     FileDeletionError,
-    FileManagerError,
     FileMoveError,
     FileReadError,
     FileWriteError,
 )
-
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
