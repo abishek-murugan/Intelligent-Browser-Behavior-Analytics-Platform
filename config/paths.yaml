@@ -19,3 +19,6 @@ paths:
   browser_ram_categorized: data/silver/browser_ram_categorized.parquet
   browser_sessions: data/silver/browser_sessions.parquet
   session_features: data/silver/session_features.parquet
+
+  session_features_gold: data/gold/session_features.parquet
+  behavior_sequences: data/gold/behavior_sequences.parquet

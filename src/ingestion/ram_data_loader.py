@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.exceptions import DataValidationError, DataCollectionError
+from src.exceptions import DataCollectionError, DataValidationError
 from src.utils.config_loader import get_paths
 from src.utils.logger import get_logger
 

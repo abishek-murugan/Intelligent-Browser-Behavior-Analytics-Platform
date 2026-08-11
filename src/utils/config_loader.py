@@ -6,7 +6,7 @@ Loads YAML configuration files from the config directory.
 
 from __future__ import annotations
 
-from functools import lru_cache
+from functools import cache, lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -27,7 +27,7 @@ class ConfigLoader:
     def __init__(self, config_dir: Path = CONFIG_DIR) -> None:
         self.config_dir = config_dir
 
-    @lru_cache(maxsize=None)
+    @cache
     def load(self, filename: str) -> dict[str, Any]:
         """
         Load a YAML configuration file.
