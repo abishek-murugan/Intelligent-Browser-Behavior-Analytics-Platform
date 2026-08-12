@@ -22,3 +22,13 @@ paths:
 
   session_features_gold: data/gold/session_features.parquet
   behavior_sequences: data/gold/behavior_sequences.parquet
+  session_segments: data/gold/session_segments.parquet
+  lstm_predictions: data/gold/lstm_predictions.parquet
+  recommendations: data/gold/recommendations.parquet
+
+  lstm_model: models/lstm_next_session.pt
+  lstm_encoder: models/category_encoder.pkl
+
+  clustering_reports: reports/clustering
+  lstm_reports: reports/lstm
+  recommendation_reports: reports/recommendation
