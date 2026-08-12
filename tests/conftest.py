@@ -168,3 +168,12 @@ def sessionized_frame() -> Callable[[pd.DataFrame | None], pd.DataFrame]:
         return _sessionized(_base_events() if events is None else events)
 
     return _build
+
+
+@pytest.fixture
+def session_features() -> Callable[[int], pd.DataFrame]:
+    """Factory returning a synthetic session-level feature frame."""
+
+    from tests.clustering_test_data import build_features
+
+    return lambda n_sessions: build_features(n_sessions)
