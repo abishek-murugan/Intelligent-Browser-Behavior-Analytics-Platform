@@ -80,7 +80,7 @@ DEFAULT_BATCH_SIZE = 32
 # MLflow
 # =============================================================================
 
-DEFAULT_MLFLOW_TRACKING_URI = "mlruns"
+DEFAULT_MLFLOW_TRACKING_URI = (PROJECT_ROOT / "mlruns").as_uri()
 
 MLFLOW_CLUSTERING_EXPERIMENT = "browser-behavior-clustering"
 

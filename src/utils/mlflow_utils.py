@@ -35,15 +35,20 @@ EXPERIMENT_NAMES = {
 }
 
 
+from pathlib import Path
+
+from src.constants import PROJECT_ROOT
+
 def get_tracking_uri() -> str:
     """
     Resolve the MLflow tracking URI.
 
     Priority: the ``MLFLOW_TRACKING_URI`` environment variable, then
-    the configured value, then the local default.
+    the configured value, then the local default. Ensures relative paths
+    are resolved absolutely against PROJECT_ROOT to prevent directory fragmentation.
     """
 
-    return os.environ.get(
+    raw_uri = os.environ.get(
         "MLFLOW_TRACKING_URI",
         get_config()
         .get("mlflow", {})
@@ -52,6 +57,14 @@ def get_tracking_uri() -> str:
             DEFAULT_MLFLOW_TRACKING_URI,
         ),
     )
+
+    if not raw_uri or raw_uri == "mlruns":
+        return (PROJECT_ROOT / "mlruns").as_uri()
+
+    if "://" not in raw_uri and not os.path.isabs(raw_uri):
+        return (PROJECT_ROOT / raw_uri).as_uri()
+
+    return raw_uri
 
 
 def setup_mlflow() -> None:
