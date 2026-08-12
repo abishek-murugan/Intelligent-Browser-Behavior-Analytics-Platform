@@ -103,7 +103,7 @@ def _sessionized(events: pd.DataFrame) -> pd.DataFrame:
 
     gap = dataframe["timestamp"].diff()
 
-    new_session = gap.isna() | (gap > pd.Timedelta(minutes=15))
+    new_session = gap.isna() | (gap > pd.Timedelta("15 minutes"))
 
     dataframe["session_id"] = new_session.cumsum()
     dataframe["session_event_index"] = dataframe.groupby("session_id").cumcount()

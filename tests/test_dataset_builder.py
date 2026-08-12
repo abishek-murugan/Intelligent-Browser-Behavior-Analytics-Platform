@@ -21,7 +21,7 @@ def _build_synthetic_features(n_sessions: int = 15) -> pd.DataFrame:
         {
             "session_id": list(range(1, n_sessions + 1)),
             "session_start": timestamps,
-            "session_end": timestamps + pd.Timedelta(minutes=30),
+            "session_end": timestamps + pd.Timedelta("30 minutes"),
             "hour": timestamps.hour,
             "is_weekend": (timestamps.dayofweek >= 5),
             "time_of_day": ["Morning"] * n_sessions,

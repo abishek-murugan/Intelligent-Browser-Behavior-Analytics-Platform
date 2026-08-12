@@ -90,7 +90,7 @@ class BrowserRAMIntegrator:
         if tolerance_seconds <= 0:
             raise ValueError("tolerance_seconds must be greater than zero.")
 
-        self.tolerance = pd.Timedelta(seconds=tolerance_seconds)
+        self.tolerance = pd.Timedelta(seconds=float(tolerance_seconds))
 
     def integrate(self) -> pd.DataFrame:
         """
