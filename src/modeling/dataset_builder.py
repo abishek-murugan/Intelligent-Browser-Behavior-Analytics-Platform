@@ -36,6 +36,7 @@ class DatasetBuilder:
         "session_id",
         "session_start",
         "session_end",
+        "dominant_category",
     }
 
     EXCLUDED_COLUMNS = {
@@ -236,6 +237,7 @@ class DatasetBuilder:
                         index - self.sequence_length : index
                     ].tolist(),
                     "target_session_id": ordered["session_id"].iloc[index],
+                    "target_category": ordered["dominant_category"].iloc[index],
                     "target_features": feature_vectors[index].tolist(),
                 }
             )
