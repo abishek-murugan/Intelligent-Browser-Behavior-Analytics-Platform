@@ -35,9 +35,11 @@ Homepage = "https://github.com/abishek/time-based-browsing-pattern-analyzer"
 
 [dependency-groups]
 dev = [
+    "ipykernel>=7.3.0",
     "nbconvert>=7.17.1",
     "nbformat>=5.11.0",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "ruff>=0.11.0",
 ]
 
