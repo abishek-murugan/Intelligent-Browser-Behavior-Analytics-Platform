@@ -25,7 +25,7 @@ machine_learning:
 deep_learning:
 
   lstm:
-    sequence_length: 10
+    sequence_length: 5
     hidden_size: 128
     num_layers: 2
     dropout: 0.2
@@ -42,6 +42,8 @@ deep_learning:
       n_trials: 15
       timeout_seconds: null
       n_jobs: 1
+      epochs: 25
+      early_stopping_patience: 5
       search_space:
         hidden_size:
           min: 32

@@ -25,6 +25,7 @@ def _build_synthetic_features(n_sessions: int = 15) -> pd.DataFrame:
             "hour": timestamps.hour,
             "is_weekend": (timestamps.dayofweek >= 5),
             "time_of_day": ["Morning"] * n_sessions,
+            "dominant_category": ["Search/Reference"] * n_sessions,
             "session_duration_seconds": [1800] * n_sessions,
             "event_count": [5] * n_sessions,
             "unique_domains": [3] * n_sessions,
@@ -68,6 +69,7 @@ def test_build_gold_datasets(tmp_path):
         "end_time",
         "feature_vectors",
         "target_session_id",
+        "target_category",
         "target_features",
     }
 
@@ -75,6 +77,7 @@ def test_build_gold_datasets(tmp_path):
 
     assert first["session_ids"] == [1, 2, 3]
     assert first["target_session_id"] == 4
+    assert first["target_category"] == "Search/Reference"
 
     vector = first["feature_vectors"]
     features = len(builder.feature_columns)
