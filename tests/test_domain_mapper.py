@@ -66,10 +66,13 @@ def test_load_mapping(mapper, mapping_csv):
     assert len(mapping) == 7
 
     assert "google.com" in mapping["domain"].values
-    assert mapping.loc[
-        mapping["domain"] == "studio.youtube.com",
-        "category",
-    ].iloc[0] == "Content Management"
+    assert (
+        mapping.loc[
+            mapping["domain"] == "studio.youtube.com",
+            "category",
+        ].iloc[0]
+        == "Content Management"
+    )
 
 
 def test_load_mapping_missing_file_raises(tmp_path):
@@ -120,9 +123,7 @@ def test_map_domains_exact_match(mapper, integrated_frame):
     )
 
     categories = (
-        result[["domain", "category"]]
-        .drop_duplicates("domain")
-        .set_index("domain")["category"]
+        result[["domain", "category"]].drop_duplicates("domain").set_index("domain")["category"]
     )
 
     assert categories["www.google.com"] == "Search/Reference"

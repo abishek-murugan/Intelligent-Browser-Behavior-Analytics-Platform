@@ -45,9 +45,7 @@ class FileManager:
             path.mkdir(parents=True, exist_ok=True)
 
         except OSError as exc:
-            raise DirectoryCreationError(
-                f"Unable to create directory: {path}"
-            ) from exc
+            raise DirectoryCreationError(f"Unable to create directory: {path}") from exc
 
         logger.info("Directory ensured: %s", path)
 
@@ -97,9 +95,7 @@ class FileManager:
             shutil.copy2(source, destination)
 
         except OSError as exc:
-            raise FileCopyError(
-                f"Unable to copy '{source}' to '{destination}'."
-            ) from exc
+            raise FileCopyError(f"Unable to copy '{source}' to '{destination}'.") from exc
 
         logger.info("Copied %s -> %s", source, destination)
 
@@ -124,9 +120,7 @@ class FileManager:
             shutil.move(str(source), str(destination))
 
         except OSError as exc:
-            raise FileMoveError(
-                f"Unable to move '{source}' to '{destination}'."
-            ) from exc
+            raise FileMoveError(f"Unable to move '{source}' to '{destination}'.") from exc
 
         logger.info("Moved %s -> %s", source, destination)
 
@@ -145,9 +139,7 @@ class FileManager:
             path.unlink()
 
         except OSError as exc:
-            raise FileDeletionError(
-                f"Unable to delete file: {path}"
-            ) from exc
+            raise FileDeletionError(f"Unable to delete file: {path}") from exc
 
         logger.info("Deleted file: %s", path)
 
@@ -164,9 +156,7 @@ class FileManager:
             shutil.rmtree(path)
 
         except OSError as exc:
-            raise FileDeletionError(
-                f"Unable to delete directory: {path}"
-            ) from exc
+            raise FileDeletionError(f"Unable to delete directory: {path}") from exc
 
         logger.info("Deleted directory: %s", path)
 
@@ -206,9 +196,7 @@ class FileManager:
                 return yaml.safe_load(file) or {}
 
         except yaml.YAMLError as exc:
-            raise FileReadError(
-                f"Invalid YAML file: {path}"
-            ) from exc
+            raise FileReadError(f"Invalid YAML file: {path}") from exc
 
     def write_yaml(
         self,
@@ -231,9 +219,7 @@ class FileManager:
                 )
 
         except OSError as exc:
-            raise FileWriteError(
-                f"Unable to write YAML: {path}"
-            ) from exc
+            raise FileWriteError(f"Unable to write YAML: {path}") from exc
 
         logger.info("YAML written: %s", path)
 
@@ -259,9 +245,7 @@ class FileManager:
                 return list(csv.DictReader(file))
 
         except OSError as exc:
-            raise FileReadError(
-                f"Unable to read CSV: {path}"
-            ) from exc
+            raise FileReadError(f"Unable to read CSV: {path}") from exc
 
     def write_csv(
         self,
@@ -290,9 +274,7 @@ class FileManager:
                 writer.writerows(rows)
 
         except OSError as exc:
-            raise FileWriteError(
-                f"Unable to write CSV: {path}"
-            ) from exc
+            raise FileWriteError(f"Unable to write CSV: {path}") from exc
 
         logger.info("CSV written: %s", path)
 

@@ -89,9 +89,9 @@ def _categorized(events: pd.DataFrame) -> pd.DataFrame:
 
     dataframe = _integrated(events)
 
-    dataframe["category"] = (
-        dataframe["domain"].map(CATEGORY_MAP).fillna("Uncategorized")
-    ).astype("string")
+    dataframe["category"] = (dataframe["domain"].map(CATEGORY_MAP).fillna("Uncategorized")).astype(
+        "string"
+    )
 
     return dataframe
 

@@ -40,9 +40,7 @@ def test_build_temporal_values(builder, sessionized_frame):
 
     assert not result["crosses_midnight"].any()
 
-    assert result["is_weekend"].equals(
-        result["day_of_week_num"].isin([5, 6])
-    )
+    assert result["is_weekend"].equals(result["day_of_week_num"].isin([5, 6]))
 
 
 def test_build_output_columns(builder, sessionized_frame):

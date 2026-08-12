@@ -54,28 +54,20 @@ class ConfigLoader:
         config_path = self.config_dir / filename
 
         if not config_path.is_file():
-            raise ConfigurationFileNotFoundError(
-                f"Configuration file not found: {config_path}"
-            )
+            raise ConfigurationFileNotFoundError(f"Configuration file not found: {config_path}")
 
         try:
             with config_path.open("r", encoding="utf-8") as file:
                 config = yaml.safe_load(file)
 
         except yaml.YAMLError as exc:
-            raise ConfigurationError(
-                f"Invalid YAML syntax in '{filename}'."
-            ) from exc
+            raise ConfigurationError(f"Invalid YAML syntax in '{filename}'.") from exc
 
         except OSError as exc:
-            raise ConfigurationError(
-                f"Unable to read configuration file '{filename}'."
-            ) from exc
+            raise ConfigurationError(f"Unable to read configuration file '{filename}'.") from exc
 
         if config is None:
-            raise ConfigurationError(
-                f"Configuration file '{filename}' is empty."
-            )
+            raise ConfigurationError(f"Configuration file '{filename}' is empty.")
 
         if not isinstance(config, dict):
             raise ConfigurationError(

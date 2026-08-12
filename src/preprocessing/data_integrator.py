@@ -66,9 +66,7 @@ class BrowserRAMIntegrator:
         paths = get_paths()["paths"]
 
         self.chrome_path = Path(
-            chrome_path
-            if chrome_path is not None
-            else paths["chrome_history_raw"]
+            chrome_path if chrome_path is not None else paths["chrome_history_raw"]
         ).expanduser()
 
         self.ram_path = Path(
@@ -90,13 +88,9 @@ class BrowserRAMIntegrator:
         ).expanduser()
 
         if tolerance_seconds <= 0:
-            raise ValueError(
-                "tolerance_seconds must be greater than zero."
-            )
+            raise ValueError("tolerance_seconds must be greater than zero.")
 
-        self.tolerance = pd.Timedelta(
-            seconds=tolerance_seconds
-        )
+        self.tolerance = pd.Timedelta(seconds=tolerance_seconds)
 
     def integrate(self) -> pd.DataFrame:
         """
@@ -172,11 +166,7 @@ class BrowserRAMIntegrator:
         Save the integrated dataset as Parquet.
         """
 
-        path = Path(
-            output_path
-            if output_path is not None
-            else self.output_path
-        ).expanduser()
+        path = Path(output_path if output_path is not None else self.output_path).expanduser()
 
         path.parent.mkdir(
             parents=True,
@@ -190,9 +180,7 @@ class BrowserRAMIntegrator:
             )
 
         except (OSError, ImportError) as exc:
-            raise FileWriteError(
-                f"Failed to save integrated dataset: {path}"
-            ) from exc
+            raise FileWriteError(f"Failed to save integrated dataset: {path}") from exc
 
         logger.info(
             "Integrated dataset saved to: %s | records=%d",
@@ -210,22 +198,16 @@ class BrowserRAMIntegrator:
         """Load a Parquet dataset."""
 
         if not path.is_file():
-            raise FileReadError(
-                f"{dataset_name} dataset not found: {path}"
-            )
+            raise FileReadError(f"{dataset_name} dataset not found: {path}")
 
         try:
             dataframe = pd.read_parquet(path)
 
         except (OSError, ImportError) as exc:
-            raise FileReadError(
-                f"Unable to read {dataset_name} dataset: {path}"
-            ) from exc
+            raise FileReadError(f"Unable to read {dataset_name} dataset: {path}") from exc
 
         if dataframe.empty:
-            raise DataValidationError(
-                f"{dataset_name} dataset is empty: {path}"
-            )
+            raise DataValidationError(f"{dataset_name} dataset is empty: {path}")
 
         return dataframe
 
@@ -237,14 +219,11 @@ class BrowserRAMIntegrator:
     ) -> None:
         """Validate that all required columns are present."""
 
-        missing_columns = required_columns - set(
-            dataframe.columns
-        )
+        missing_columns = required_columns - set(dataframe.columns)
 
         if missing_columns:
             raise DataValidationError(
-                f"{dataset_name} dataset is missing required "
-                f"columns: {sorted(missing_columns)}"
+                f"{dataset_name} dataset is missing required columns: {sorted(missing_columns)}"
             )
 
     @staticmethod
@@ -262,19 +241,14 @@ class BrowserRAMIntegrator:
             utc=True,
         )
 
-        invalid_count = int(
-            dataframe["timestamp"].isna().sum()
-        )
+        invalid_count = int(dataframe["timestamp"].isna().sum())
 
         if invalid_count:
             raise DataValidationError(
-                f"{dataset_name} contains "
-                f"{invalid_count} invalid timestamps."
+                f"{dataset_name} contains {invalid_count} invalid timestamps."
             )
 
-        dataframe = dataframe.sort_values(
-            "timestamp"
-        ).reset_index(drop=True)
+        dataframe = dataframe.sort_values("timestamp").reset_index(drop=True)
 
         return dataframe
 
@@ -303,8 +277,7 @@ class BrowserRAMIntegrator:
 
         if overlap_start > overlap_end:
             raise DataValidationError(
-                "Chrome history and RAM datasets have no "
-                "overlapping time period."
+                "Chrome history and RAM datasets have no overlapping time period."
             )
 
         logger.info(
@@ -342,21 +315,14 @@ class BrowserRAMIntegrator:
             tolerance=self.tolerance,
         )
 
-        matched_count = int(
-            integrated_data["usage_percent"].notna().sum()
-        )
+        matched_count = int(integrated_data["usage_percent"].notna().sum())
 
         unmatched_count = len(integrated_data) - matched_count
 
-        match_rate = (
-            matched_count / len(integrated_data)
-            if len(integrated_data)
-            else 0.0
-        )
+        match_rate = matched_count / len(integrated_data) if len(integrated_data) else 0.0
 
         logger.info(
-            "RAM alignment completed | "
-            "matched=%d | unmatched=%d | match_rate=%.2f%%",
+            "RAM alignment completed | matched=%d | unmatched=%d | match_rate=%.2f%%",
             matched_count,
             unmatched_count,
             match_rate * 100,

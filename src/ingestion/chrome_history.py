@@ -95,10 +95,7 @@ class ChromeHistoryCollector:
         """Validate that the Chrome History database exists."""
 
         if not self.database_path.is_file():
-            raise ChromeHistoryError(
-                f"Chrome History database not found: "
-                f"{self.database_path}"
-            )
+            raise ChromeHistoryError(f"Chrome History database not found: {self.database_path}")
 
     def _create_database_copy(self) -> Path:
         """
@@ -158,9 +155,7 @@ class ChromeHistoryCollector:
             )
 
         except sqlite3.Error as exc:
-            raise ChromeHistoryError(
-                "Failed to read Chrome History SQLite database."
-            ) from exc
+            raise ChromeHistoryError("Failed to read Chrome History SQLite database.") from exc
 
         finally:
             if connection is not None:
@@ -187,13 +182,9 @@ class ChromeHistoryCollector:
                 ]
             )
 
-        dataframe["timestamp"] = self._convert_chrome_timestamp(
-            dataframe["visit_time"]
-        )
+        dataframe["timestamp"] = self._convert_chrome_timestamp(dataframe["visit_time"])
 
-        dataframe["domain"] = dataframe["url"].map(
-            self._extract_domain
-        )
+        dataframe["domain"] = dataframe["url"].map(self._extract_domain)
 
         dataframe = dataframe[
             [
@@ -223,12 +214,9 @@ class ChromeHistoryCollector:
             tz="UTC",
         )
 
-        return (
-            chrome_epoch
-            + pd.to_timedelta(
-                timestamps,
-                unit="us",
-            )
+        return chrome_epoch + pd.to_timedelta(
+            timestamps,
+            unit="us",
         )
 
     def save(
@@ -258,9 +246,7 @@ class ChromeHistoryCollector:
             )
 
         except Exception as exc:
-            raise ChromeHistoryError(
-                f"Failed to save Chrome history to: {output_path}"
-            ) from exc
+            raise ChromeHistoryError(f"Failed to save Chrome history to: {output_path}") from exc
 
         logger.info(
             "Chrome history saved to: %s | Records: %d",

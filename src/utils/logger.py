@@ -36,9 +36,7 @@ def setup_logging() -> None:
         logging.config.dictConfig(config)
 
     except Exception as exc:
-        raise ConfigurationError(
-            "Failed to initialize the logging system."
-        ) from exc
+        raise ConfigurationError("Failed to initialize the logging system.") from exc
 
 
 def get_logger(name: str) -> logging.Logger:

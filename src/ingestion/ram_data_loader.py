@@ -75,17 +75,13 @@ class RAMDataLoader:
         )
 
         if not self.input_path.is_file():
-            raise DataCollectionError(
-                f"RAM dataset not found: {self.input_path}"
-            )
+            raise DataCollectionError(f"RAM dataset not found: {self.input_path}")
 
         try:
             dataframe = pd.read_csv(self.input_path)
 
         except (OSError, pd.errors.ParserError) as exc:
-            raise DataCollectionError(
-                f"Failed to read RAM dataset: {self.input_path}"
-            ) from exc
+            raise DataCollectionError(f"Failed to read RAM dataset: {self.input_path}") from exc
 
         self._validate_schema(dataframe)
 
@@ -111,14 +107,11 @@ class RAMDataLoader:
 
         if missing_columns:
             raise DataValidationError(
-                "RAM dataset is missing required columns: "
-                f"{sorted(missing_columns)}"
+                f"RAM dataset is missing required columns: {sorted(missing_columns)}"
             )
 
         if dataframe.empty:
-            raise DataValidationError(
-                "RAM dataset is empty."
-            )
+            raise DataValidationError("RAM dataset is empty.")
 
     def _prepare(
         self,
@@ -135,14 +128,9 @@ class RAMDataLoader:
         )
 
         if dataframe["timestamp"].isna().any():
-            invalid_count = int(
-                dataframe["timestamp"].isna().sum()
-            )
+            invalid_count = int(dataframe["timestamp"].isna().sum())
 
-            raise DataValidationError(
-                f"RAM dataset contains {invalid_count} "
-                "invalid timestamps."
-            )
+            raise DataValidationError(f"RAM dataset contains {invalid_count} invalid timestamps.")
 
         numeric_columns = [
             "total_mb",
@@ -158,13 +146,9 @@ class RAMDataLoader:
             )
 
         if dataframe[numeric_columns].isna().any().any():
-            raise DataValidationError(
-                "RAM dataset contains invalid numeric values."
-            )
+            raise DataValidationError("RAM dataset contains invalid numeric values.")
 
-        dataframe = dataframe.sort_values(
-            "timestamp"
-        ).reset_index(drop=True)
+        dataframe = dataframe.sort_values("timestamp").reset_index(drop=True)
 
         return dataframe
 
@@ -213,9 +197,7 @@ class RAMDataLoader:
             )
 
         except (OSError, ImportError) as exc:
-            raise DataCollectionError(
-                f"Failed to save RAM dataset: {output_path}"
-            ) from exc
+            raise DataCollectionError(f"Failed to save RAM dataset: {output_path}") from exc
 
         logger.info(
             "RAM dataset saved to: %s | records=%d",

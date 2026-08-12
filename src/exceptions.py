@@ -10,6 +10,7 @@ BrowserBehaviorAnalyticsError.
 # Base Exception
 # =============================================================================
 
+
 class BrowserBehaviorAnalyticsError(Exception):
     """Base exception for the application."""
 
@@ -17,6 +18,7 @@ class BrowserBehaviorAnalyticsError(Exception):
 # =============================================================================
 # Configuration
 # =============================================================================
+
 
 class ConfigurationError(BrowserBehaviorAnalyticsError):
     """Raised when a configuration is invalid."""
@@ -29,6 +31,7 @@ class ConfigurationFileNotFoundError(ConfigurationError):
 # =============================================================================
 # File System
 # =============================================================================
+
 
 class FileManagerError(BrowserBehaviorAnalyticsError):
     """Raised for file system related errors."""
@@ -62,6 +65,7 @@ class FileWriteError(FileManagerError):
 # Data Ingestion
 # =============================================================================
 
+
 class DataCollectionError(BrowserBehaviorAnalyticsError):
     """Raised during data collection."""
 
@@ -90,6 +94,7 @@ class AppUsageCollectionError(DataCollectionError):
 # Data Processing
 # =============================================================================
 
+
 class DataValidationError(BrowserBehaviorAnalyticsError):
     """Raised when input data fails validation."""
 
@@ -109,6 +114,7 @@ class DataTransformationError(BrowserBehaviorAnalyticsError):
 # =============================================================================
 # Databricks
 # =============================================================================
+
 
 class DatabricksError(BrowserBehaviorAnalyticsError):
     """Base exception for Databricks operations."""
@@ -130,6 +136,7 @@ class SparkSessionError(DatabricksError):
 # Machine Learning
 # =============================================================================
 
+
 class ModelTrainingError(BrowserBehaviorAnalyticsError):
     """Raised during model training."""
 
@@ -149,6 +156,7 @@ class ModelSerializationError(BrowserBehaviorAnalyticsError):
 # =============================================================================
 # Deep Learning
 # =============================================================================
+
 
 class DeepLearningError(BrowserBehaviorAnalyticsError):
     """Base exception for deep learning."""
@@ -170,6 +178,7 @@ class RNNTrainingError(DeepLearningError):
 # Recommendation Engine
 # =============================================================================
 
+
 class RecommendationEngineError(BrowserBehaviorAnalyticsError):
     """Raised when recommendation generation fails."""
 
@@ -177,6 +186,7 @@ class RecommendationEngineError(BrowserBehaviorAnalyticsError):
 # =============================================================================
 # Visualization
 # =============================================================================
+
 
 class VisualizationError(BrowserBehaviorAnalyticsError):
     """Raised during chart or dashboard generation."""
@@ -186,6 +196,7 @@ class VisualizationError(BrowserBehaviorAnalyticsError):
 # Deployment
 # =============================================================================
 
+
 class DeploymentError(BrowserBehaviorAnalyticsError):
     """Raised during deployment."""
 
@@ -193,6 +204,7 @@ class DeploymentError(BrowserBehaviorAnalyticsError):
 # =============================================================================
 # External Services
 # =============================================================================
+
 
 class ExternalServiceError(BrowserBehaviorAnalyticsError):
     """Raised when communicating with an external service."""

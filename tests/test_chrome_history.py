@@ -11,9 +11,7 @@ CHROME_EPOCH = pd.Timestamp("1601-01-01", tz="UTC")
 
 
 def _chrome_visit_time(timestamp: pd.Timestamp) -> int:
-    return int(
-        (timestamp.tz_convert("UTC") - CHROME_EPOCH).total_seconds() * 1_000_000
-    )
+    return int((timestamp.tz_convert("UTC") - CHROME_EPOCH).total_seconds() * 1_000_000)
 
 
 def _write_history_database(
@@ -40,8 +38,7 @@ def _write_history_database(
 
     for index, (url, title, visit_count, visit_time) in enumerate(rows, start=1):
         connection.execute(
-            "INSERT INTO urls (id, url, title, visit_count) "
-            "VALUES (?, ?, ?, ?)",
+            "INSERT INTO urls (id, url, title, visit_count) VALUES (?, ?, ?, ?)",
             (index, url, title, visit_count),
         )
         connection.execute(
