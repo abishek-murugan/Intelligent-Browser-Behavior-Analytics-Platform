@@ -77,6 +77,30 @@ DEFAULT_VALIDATION_SIZE = 0.2
 DEFAULT_BATCH_SIZE = 32
 
 # =============================================================================
+# MLflow
+# =============================================================================
+
+DEFAULT_MLFLOW_TRACKING_URI = "mlruns"
+
+MLFLOW_CLUSTERING_EXPERIMENT = "browser-behavior-clustering"
+
+MLFLOW_LSTM_EXPERIMENT = "browser-behavior-lstm"
+
+MLFLOW_LSTM_TUNING_EXPERIMENT = "browser-behavior-lstm-tuning"
+
+MLFLOW_RECOMMENDATION_EXPERIMENT = "browser-behavior-recommendation"
+
+# =============================================================================
+# Reports
+# =============================================================================
+
+CLUSTERING_REPORT_DIR = REPORT_DIR / "clustering"
+
+LSTM_REPORT_DIR = REPORT_DIR / "lstm"
+
+RECOMMENDATION_REPORT_DIR = REPORT_DIR / "recommendation"
+
+# =============================================================================
 # Streamlit
 # =============================================================================
 

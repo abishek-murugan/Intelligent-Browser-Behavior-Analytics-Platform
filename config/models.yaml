@@ -1,11 +1,22 @@
 machine_learning:
 
-  pca:
-    variance_ratio: 0.95
+  clustering:
+    preprocess:
+      pca_variance_ratio: 0.95
+      exclude_columns:
+        - session_id
+        - session_start
+        - session_end
+        - hour
+        - day_of_week_num
+        - time_of_day
+        - dominant_category
 
-  kmeans:
-    max_clusters: 10
-    random_state: 42
+    kmeans:
+      min_clusters: 2
+      max_clusters: 10
+      n_init: 10
+      random_state: 42
 
   isolation_forest:
     contamination: auto
@@ -21,3 +32,38 @@ deep_learning:
     learning_rate: 0.001
     epochs: 50
     batch_size: 32
+    split_ratios:
+      train: 0.8
+      validation: 0.1
+      test: 0.1
+    early_stopping_patience: 10
+    classification_weight: 0.5
+    tuning:
+      n_trials: 15
+      timeout_seconds: null
+      n_jobs: 1
+      search_space:
+        hidden_size:
+          min: 32
+          max: 256
+        num_layers:
+          min: 1
+          max: 3
+        dropout:
+          min: 0.0
+          max: 0.5
+        learning_rate:
+          min: 0.0001
+          max: 0.01
+        batch_size:
+          min: 16
+          max: 64
+        classification_weight:
+          min: 0.1
+          max: 1.0
+
+recommendation:
+
+  top_k: 5
+  similarity_weight: 0.5
+  min_sessions_for_catalog: 3

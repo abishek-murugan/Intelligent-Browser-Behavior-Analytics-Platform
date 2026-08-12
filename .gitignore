@@ -28,6 +28,12 @@ models/*.pth
 models/*.pt
 models/*.onnx
 
+# MLflow
+mlruns/
+
+# Optuna
+*.db
+
 # Jupyter
 .ipynb_checkpoints/
 
@@ -37,9 +43,6 @@ models/*.onnx
 # OS
 .DS_Store
 Thumbs.db
-
-# Reports
-reports/
 
 # Distribution
 dist/

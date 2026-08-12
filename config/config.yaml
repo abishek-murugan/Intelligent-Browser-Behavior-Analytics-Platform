@@ -15,6 +15,18 @@ privacy:
   remove_query_strings: true
   anonymize_paths: true
 
+mlflow:
+  tracking_uri: mlruns
+  experiments:
+    clustering: browser-behavior-clustering
+    lstm: browser-behavior-lstm
+    lstm_tuning: browser-behavior-lstm-tuning
+    recommendation: browser-behavior-recommendation
+
+optuna:
+  study_name: lstm-next-session-tuning
+  storage: sqlite:///mlruns/optuna_lstm.db
+
 dashboard:
   refresh_interval: 30
   default_theme: light

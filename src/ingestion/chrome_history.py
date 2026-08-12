@@ -206,17 +206,18 @@ class ChromeHistoryCollector:
         Convert Chrome WebKit timestamps to UTC datetime.
 
         Chrome stores timestamps as microseconds since
-        1601-01-01 00:00:00 UTC.
+        1601-01-01 00:00:00 UTC. The 1601 epoch predates the
+        datetime64[ns] range supported by pandas, so values are
+        converted to seconds since the UNIX epoch (1970-01-01)
+        before conversion.
         """
 
-        chrome_epoch = pd.Timestamp(
-            "1601-01-01",
-            tz="UTC",
-        )
+        unix_seconds = timestamps / 1_000_000 - self.CHROME_EPOCH_OFFSET
 
-        return chrome_epoch + pd.to_timedelta(
-            timestamps,
-            unit="us",
+        return pd.to_datetime(
+            unix_seconds,
+            unit="s",
+            utc=True,
         )
 
     def save(

@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import logging
 import logging.config
+from pathlib import Path
 
-from src.constants import LOG_DIR
+from src.constants import LOG_DIR, PROJECT_ROOT
 from src.exceptions import (
     ConfigurationError,
 )
@@ -33,10 +34,39 @@ def setup_logging() -> None:
 
     try:
         config = get_logging()
+
+        _resolve_handler_paths(config)
+
         logging.config.dictConfig(config)
 
     except Exception as exc:
         raise ConfigurationError("Failed to initialize the logging system.") from exc
+
+
+def _resolve_handler_paths(config: dict[str, object]) -> None:
+    """
+    Make relative log file paths in the logging configuration absolute.
+
+    ``dictConfig`` resolves relative ``filename`` values against the
+    current working directory, which breaks when code runs from a
+    different directory (e.g. a notebook). Handler file paths are
+    instead resolved against the project root so logs always land in
+    ``<project root>/logs``.
+    """
+
+    handlers = config.get("handlers")
+
+    if not isinstance(handlers, dict):
+        return
+
+    for handler in handlers.values():
+        if not isinstance(handler, dict):
+            continue
+
+        filename = handler.get("filename")
+
+        if isinstance(filename, str) and not Path(filename).is_absolute():
+            handler["filename"] = str(PROJECT_ROOT / filename)
 
 
 def get_logger(name: str) -> logging.Logger:
