@@ -98,17 +98,9 @@ def category_feature_profiles(feature_columns: tuple[str, ...]) -> pd.DataFrame:
 
 def run_full_pipeline_action() -> None:
     """Trigger full end-to-end processing pipeline."""
-    from src.clustering.pipeline import ClusteringPipeline
-    from src.deep_learning.dataset_builder import DatasetBuilder
-    from src.deep_learning.lstm_pipeline import LSTMPipeline
-    from src.feature_engineering.feature_pipeline import FeaturePipeline
-    from src.recommendation.pipeline import RecommendationPipeline
+    from src.pipeline import run_full_pipeline
 
-    FeaturePipeline().run()
-    ClusteringPipeline().run()
-    DatasetBuilder(sequence_length=5).run()
-    LSTMPipeline().run()
-    RecommendationPipeline().run()
+    run_full_pipeline()
 
 
 # Load configuration paths
