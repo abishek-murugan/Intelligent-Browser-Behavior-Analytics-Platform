@@ -83,11 +83,13 @@ uv sync
 
 ### 2. Run Complete End-to-End Pipeline
 ```bash
-# Execute Feature Engineering & KMeans Clustering
-uv run python -c "from src.feature_engineering.feature_pipeline import FeaturePipeline; from src.clustering.pipeline import ClusteringPipeline; FeaturePipeline().run(); ClusteringPipeline().run()"
+# Requires raw inputs under data/raw (Chrome history, RAM usage, domain map).
+# Optional: generate a deterministic synthetic dataset first (no real profile needed):
+uv run python scripts/make_synthetic_data.py
 
-# Build 5-Session Gold Sequences, Train PyTorch LSTM, and Generate Recommendations
-uv run python -c "from src.deep_learning.dataset_builder import DatasetBuilder; from src.deep_learning.lstm_pipeline import LSTMPipeline; from src.recommendation.pipeline import RecommendationPipeline; DatasetBuilder(sequence_length=5).run(); LSTMPipeline().run(); RecommendationPipeline().run()"
+# Full chain: integration -> categorization -> sessionization -> feature
+# engineering -> clustering -> LSTM training/prediction -> recommendations.
+uv run python scripts/run_full_pipeline.py
 ```
 
 ### 3. Launch Streamlit Analytics Dashboard
@@ -127,6 +129,7 @@ Interactive, educational notebooks for experimentation and analysis are located 
 │   ├── lstm/
 │   ├── recommendation/
 │   └── images/                  # Generated chart images
+├── scripts/                     # Synthetic data generation & full-pipeline CLI
 ├── src/                         # Production Python source modules
 │   ├── clustering/
 │   ├── deep_learning/
