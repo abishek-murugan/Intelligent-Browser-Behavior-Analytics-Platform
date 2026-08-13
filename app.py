@@ -95,7 +95,7 @@ source_option = st.sidebar.radio(
 )
 
 if source_option == "Re-run full pipeline":
-    if st.sidebar.button("🚀 Run Pipeline Now", use_container_width=True):
+    if st.sidebar.button("🚀 Run Pipeline Now", width="stretch"):
         with st.spinner("Executing pipeline (Feature Engineering, KMeans, PyTorch LSTM, Recs)..."):
             run_full_pipeline_action()
             st.sidebar.success("Pipeline execution completed!")
@@ -164,7 +164,7 @@ with tab_overview:
         title="Session Count by Dominant Category",
     )
     fig_cat.update_layout(xaxis_title="Category", yaxis_title="Sessions", showlegend=False)
-    st.plotly_chart(fig_cat, use_container_width=True)
+    st.plotly_chart(fig_cat, width="stretch")
 
     col_left, col_right = st.columns(2)
     with col_left:
@@ -182,7 +182,7 @@ with tab_overview:
                 title="Top 15 Most Visited Domains",
             )
             fig_domains.update_layout(yaxis=dict(autorange="reversed"))
-            st.plotly_chart(fig_domains, use_container_width=True)
+            st.plotly_chart(fig_domains, width="stretch")
         else:
             st.info("Domain details unavailable.")
 
@@ -199,11 +199,11 @@ with tab_overview:
                     labels={"x": "Day of Week", "y": "Hour of Day", "color": "Sessions"},
                     title="Hourly Session Start Density",
                 )
-                st.plotly_chart(fig_heat, use_container_width=True)
+                st.plotly_chart(fig_heat, width="stretch")
             else:
                 by_hour = sessions.groupby("hour").size().reset_index(name="sessions")
                 fig_hour = px.line(by_hour, x="hour", y="sessions", markers=True, title="Sessions by Hour")
-                st.plotly_chart(fig_hour, use_container_width=True)
+                st.plotly_chart(fig_hour, width="stretch")
         else:
             st.info("Hourly breakdown unavailable.")
 
@@ -223,7 +223,7 @@ with tab_ram:
             color="category",
             title="Peak Used RAM (MB) across Categories",
         )
-        st.plotly_chart(fig_ram_cat, use_container_width=True)
+        st.plotly_chart(fig_ram_cat, width="stretch")
     else:
         st.info("RAM usage data unavailable.")
 
@@ -234,7 +234,7 @@ with tab_ram:
             go.Scatter(x=df_time["timestamp"], y=df_time["used_mb"], mode="lines", name="Used RAM (MB)", line=dict(color="#2b5c8f"))
         )
         fig_time.update_layout(xaxis_title="Timestamp", yaxis_title="Used RAM (MB)", title="RAM Consumption Time Series")
-        st.plotly_chart(fig_time, use_container_width=True)
+        st.plotly_chart(fig_time, width="stretch")
 
     if {"session_duration_seconds", "avg_usage_percent"} <= set(sessions.columns):
         st.subheader("Session Duration vs Mean RAM Usage")
@@ -248,7 +248,7 @@ with tab_ram:
             title="Duration vs Memory Footprint",
             labels={"avg_usage_percent": "Avg RAM Usage (%)", "session_duration_seconds": "Duration (s)"},
         )
-        st.plotly_chart(fig_scat, use_container_width=True)
+        st.plotly_chart(fig_scat, width="stretch")
 
 # -----------------------------------------------------------------------------
 # TAB 3: CLUSTERING
@@ -277,11 +277,11 @@ with tab_cluster:
             title="KMeans Session Segments Projection",
             labels={"color": "Segment"},
         )
-        st.plotly_chart(fig_pca, use_container_width=True)
+        st.plotly_chart(fig_pca, width="stretch")
         
         st.subheader("Segment Behavior Profiles")
         profile_table = sessions.groupby("segment_id")[valid_num_cols].mean().reset_index()
-        st.dataframe(profile_table.style.highlight_max(axis=0, color="#d1e7dd"), use_container_width=True)
+        st.dataframe(profile_table.style.highlight_max(axis=0, color="#d1e7dd"), width="stretch")
     else:
         st.info("Clustering PCA plot requires session segment features.")
 
@@ -324,7 +324,7 @@ with tab_lstm:
         title="Predicted Next Category Probability Distribution",
     )
     fig_prob.update_layout(showlegend=False, yaxis_tickformat=".0%")
-    st.plotly_chart(fig_prob, use_container_width=True)
+    st.plotly_chart(fig_prob, width="stretch")
     
     if not predictions.empty:
         st.subheader("Held-Out Test Dataset Performance")
@@ -332,7 +332,7 @@ with tab_lstm:
             predictions[
                 [c for c in ["target_session_id", "actual_category", "predicted_category", "category_correct"] if c in predictions.columns]
             ].head(20),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
