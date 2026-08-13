@@ -5,7 +5,7 @@ Centralizes MLflow tracking URI resolution and experiment setup so
 all pipeline stages (clustering, LSTM, recommendation) log to a
 consistent backend. The tracking URI can be overridden at runtime
 through the ``MLFLOW_TRACKING_URI`` environment variable, which is
-useful when switching to a remote tracking server (e.g. Azure ML).
+useful when switching to a remote tracking server later.
 """
 
 from __future__ import annotations

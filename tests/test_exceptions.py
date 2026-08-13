@@ -5,14 +5,11 @@ from src.exceptions import (
     ChromeHistoryError,
     ConfigurationError,
     ConfigurationFileNotFoundError,
-    DatabricksConnectionError,
-    DatabricksError,
     DataCleaningError,
     DataCollectionError,
     DataTransformationError,
     DataValidationError,
     DeepLearningError,
-    DeltaTableError,
     DeploymentError,
     DirectoryCreationError,
     ExternalServiceError,
@@ -33,7 +30,6 @@ from src.exceptions import (
     RecommendationEngineError,
     RNNTrainingError,
     SequenceGenerationError,
-    SparkSessionError,
     VisualizationError,
 )
 
@@ -66,10 +62,6 @@ def test_all_exceptions_derive_from_base():
         DataCleaningError,
         FeatureEngineeringError,
         DataTransformationError,
-        DatabricksError,
-        DatabricksConnectionError,
-        DeltaTableError,
-        SparkSessionError,
         ModelTrainingError,
         ModelLoadingError,
         PredictionError,
@@ -101,9 +93,6 @@ def test_exception_hierarchy():
     assert issubclass(FileDeletionError, FileManagerError)
     assert issubclass(FileReadError, FileManagerError)
     assert issubclass(FileWriteError, FileManagerError)
-    assert issubclass(DatabricksConnectionError, DatabricksError)
-    assert issubclass(DeltaTableError, DatabricksError)
-    assert issubclass(SparkSessionError, DatabricksError)
     assert issubclass(SequenceGenerationError, DeepLearningError)
     assert issubclass(LSTMTrainingError, DeepLearningError)
     assert issubclass(RNNTrainingError, DeepLearningError)

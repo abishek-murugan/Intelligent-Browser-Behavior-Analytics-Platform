@@ -112,27 +112,6 @@ class DataTransformationError(BrowserBehaviorAnalyticsError):
 
 
 # =============================================================================
-# Databricks
-# =============================================================================
-
-
-class DatabricksError(BrowserBehaviorAnalyticsError):
-    """Base exception for Databricks operations."""
-
-
-class DatabricksConnectionError(DatabricksError):
-    """Raised when Databricks connection fails."""
-
-
-class DeltaTableError(DatabricksError):
-    """Raised during Delta Lake operations."""
-
-
-class SparkSessionError(DatabricksError):
-    """Raised when Spark session creation fails."""
-
-
-# =============================================================================
 # Machine Learning
 # =============================================================================
 
