@@ -21,6 +21,7 @@ from src.constants import (
     MLFLOW_LSTM_EXPERIMENT,
     MLFLOW_LSTM_TUNING_EXPERIMENT,
     MLFLOW_RECOMMENDATION_EXPERIMENT,
+    PROJECT_ROOT,
 )
 from src.utils.config_loader import get_config
 from src.utils.logger import get_logger
@@ -34,10 +35,6 @@ EXPERIMENT_NAMES = {
     "recommendation": MLFLOW_RECOMMENDATION_EXPERIMENT,
 }
 
-
-from pathlib import Path
-
-from src.constants import PROJECT_ROOT
 
 def get_tracking_uri() -> str:
     """
