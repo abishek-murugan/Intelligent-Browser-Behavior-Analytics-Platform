@@ -239,7 +239,7 @@ class BrowserRAMIntegrator:
             dataframe["timestamp"],
             errors="coerce",
             utc=True,
-        )
+        ).astype("datetime64[us, UTC]")
 
         invalid_count = int(dataframe["timestamp"].isna().sum())
 

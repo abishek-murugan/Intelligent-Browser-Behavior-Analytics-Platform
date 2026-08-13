@@ -416,11 +416,18 @@ class ClusteringPipeline:
                 analysis.calinski_harabasz[analysis.best_index()],
             )
 
-            mlflow.sklearn.log_model(
-                result.model,
-                "kmeans_model",
-                registered_model_name="BrowserSessionKMeansClusterer",
-            )
+            try:
+                mlflow.sklearn.log_model(
+                    result.model,
+                    "kmeans_model",
+                    registered_model_name="BrowserSessionKMeansClusterer",
+                )
+            except Exception as err:
+                logger.warning(
+                    "Could not register KMeans model to MLflow registry: %s",
+                    err,
+                )
+                mlflow.sklearn.log_model(result.model, "kmeans_model")
             mlflow.sklearn.log_model(
                 self.preprocessor.scaler,
                 "scaler",
