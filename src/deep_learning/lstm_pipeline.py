@@ -16,8 +16,8 @@ from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from src.exceptions import DataValidationError, FileReadError, LSTMTrainingError, PredictionError
-from src.modeling.dataset_builder import DatasetBuilder
-from src.modeling.lstm_model import NextSessionLSTM
+from src.deep_learning.dataset_builder import DatasetBuilder
+from src.deep_learning.lstm_model import NextSessionLSTM
 from src.utils.config_loader import get_config, get_models, get_paths
 from src.utils.logger import get_logger
 from src.utils.mlflow_utils import get_experiment_id, get_experiment_name, setup_mlflow

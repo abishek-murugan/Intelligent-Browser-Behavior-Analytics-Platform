@@ -87,7 +87,7 @@ uv sync
 uv run python -c "from src.feature_engineering.feature_pipeline import FeaturePipeline; from src.clustering.pipeline import ClusteringPipeline; FeaturePipeline().run(); ClusteringPipeline().run()"
 
 # Build 5-Session Gold Sequences, Train PyTorch LSTM, and Generate Recommendations
-uv run python -c "from src.modeling.dataset_builder import DatasetBuilder; from src.modeling.lstm_pipeline import LSTMPipeline; from src.recommendation.pipeline import RecommendationPipeline; DatasetBuilder(sequence_length=5).run(); LSTMPipeline().run(); RecommendationPipeline().run()"
+uv run python -c "from src.deep_learning.dataset_builder import DatasetBuilder; from src.deep_learning.lstm_pipeline import LSTMPipeline; from src.recommendation.pipeline import RecommendationPipeline; DatasetBuilder(sequence_length=5).run(); LSTMPipeline().run(); RecommendationPipeline().run()"
 ```
 
 ### 3. Launch Streamlit Analytics Dashboard
@@ -129,9 +129,9 @@ Interactive, educational notebooks for experimentation and analysis are located 
 │   └── images/                  # Generated chart images
 ├── src/                         # Production Python source modules
 │   ├── clustering/
+│   ├── deep_learning/
 │   ├── feature_engineering/
 │   ├── ingestion/
-│   ├── modeling/
 │   ├── preprocessing/
 │   ├── recommendation/
 │   └── utils/

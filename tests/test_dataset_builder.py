@@ -6,7 +6,7 @@ from src.exceptions import (
     FileReadError,
     SequenceGenerationError,
 )
-from src.modeling.dataset_builder import DatasetBuilder
+from src.deep_learning.dataset_builder import DatasetBuilder
 
 
 def _build_synthetic_features(n_sessions: int = 15) -> pd.DataFrame:

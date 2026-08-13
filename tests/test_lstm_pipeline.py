@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.modeling.lstm_pipeline import LSTMPipeline
+from src.deep_learning.lstm_pipeline import LSTMPipeline
 
 
 def _sequences(count: int = 30) -> pd.DataFrame:
