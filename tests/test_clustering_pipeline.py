@@ -21,6 +21,8 @@ def _pipeline(tmp_path, track_mlflow=False, n_sessions=90):
         input_path=dataframe_path,
         output_path=tmp_path / "segments.parquet",
         report_dir=tmp_path / "reports",
+        preprocessor_path=tmp_path / "models" / "clustering_preprocessor.pkl",
+        kmeans_path=tmp_path / "models" / "kmeans_model.pkl",
         preprocessor=ClusteringPreprocessor(
             exclude_columns=EXCLUDED,
             pca_variance_ratio=0.95,
@@ -59,6 +61,9 @@ def test_pipeline_run(tmp_path):
         assert (tmp_path / "reports" / name).is_file(), name
 
     assert (tmp_path / "reports" / "segment_profile.csv").is_file()
+
+    assert (tmp_path / "models" / "clustering_preprocessor.pkl").is_file()
+    assert (tmp_path / "models" / "kmeans_model.pkl").is_file()
 
 
 def test_pipeline_logs_mlflow_run(tmp_path):

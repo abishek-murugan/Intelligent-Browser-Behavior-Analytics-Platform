@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pickle
 import random
 from dataclasses import dataclass
 from pathlib import Path
@@ -52,7 +53,9 @@ class LSTMPipeline:
         self,
         input_path: str | Path | None = None,
         model_path: str | Path | None = None,
+        encoder_path: str | Path | None = None,
         predictions_path: str | Path | None = None,
+        report_dir: str | Path | None = None,
         track_mlflow: bool = True,
         device: str | None = None,
         overrides: dict[str, Any] | None = None,
@@ -62,7 +65,11 @@ class LSTMPipeline:
         self.settings.update(overrides or {})
         self.input_path = Path(input_path or paths["behavior_sequences"]).expanduser()
         self.model_path = Path(model_path or paths["lstm_model"]).expanduser()
+        self.encoder_path = Path(encoder_path or paths["lstm_encoder"]).expanduser()
         self.predictions_path = Path(predictions_path or paths["lstm_predictions"]).expanduser()
+        self.report_dir = Path(
+            report_dir if report_dir is not None else paths.get("lstm_reports", "reports/lstm")
+        ).expanduser()
         self.track_mlflow = track_mlflow
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
         self.artifacts: LSTMArtifacts | None = None
@@ -80,6 +87,7 @@ class LSTMPipeline:
         metrics, predictions = self.evaluate(splits["test"])
         self.save()
         self._save_predictions(predictions)
+        self._render_report_plots(history, predictions)
         run_id = self._log_mlflow(metrics, history, len(frame))
         logger.info(
             "LSTM pipeline completed | test_samples=%d | rmse=%.4f",
@@ -108,6 +116,8 @@ class LSTMPipeline:
         actual = self.artifacts.scaler.inverse_transform(targets)
         category_ids = logits.argmax(dim=1).cpu().numpy()
         labels = self.artifacts.encoder.inverse_transform(category_ids)
+        probabilities = torch.softmax(logits, dim=1).cpu().numpy()
+        confidences = probabilities[np.arange(len(category_ids)), category_ids]
         metrics = {
             "mse": float(mean_squared_error(actual, predicted)),
             "rmse": float(mean_squared_error(actual, predicted) ** 0.5),
@@ -120,6 +130,7 @@ class LSTMPipeline:
                 "actual_category": categories,
                 "predicted_category": labels,
                 "category_correct": categories == labels,
+                "category_confidence": confidences,
             }
         )
         for index, name in enumerate(self.artifacts.feature_columns):
@@ -201,6 +212,11 @@ class LSTMPipeline:
             self.model_path,
         )
         logger.info("LSTM model saved: %s", self.model_path)
+
+        self.encoder_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.encoder_path.open("wb") as file:
+            pickle.dump(self.artifacts.encoder, file)
+        logger.info("Category encoder saved: %s", self.encoder_path)
         return self.model_path
 
     def load(self) -> LSTMArtifacts:
@@ -465,12 +481,23 @@ class LSTMPipeline:
     def _log_loss_curve(history: list[dict[str, float]]) -> None:
         import tempfile
 
+        import matplotlib.pyplot as plt
+        import mlflow
+
+        figure = LSTMPipeline._plot_loss_curves(history)
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as file:
+            figure.savefig(file.name, dpi=150)
+            plt.close(figure)
+            mlflow.log_artifact(file.name, artifact_path="figures")
+
+    @staticmethod
+    def _plot_loss_curves(history: list[dict[str, float]]):
+        """Return the train/validation loss figure for the training history."""
         import matplotlib
 
         matplotlib.use("Agg")
 
         import matplotlib.pyplot as plt
-        import mlflow
 
         epochs = [entry["epoch"] for entry in history]
         validation = [entry["validation_loss"] for entry in history]
@@ -486,11 +513,48 @@ class LSTMPipeline:
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
+        return plt.gcf()
 
-        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as file:
-            plt.savefig(file.name, dpi=150)
-            plt.close()
-            mlflow.log_artifact(file.name, artifact_path="figures")
+    def _render_report_plots(
+        self, history: list[dict[str, float]], predictions: pd.DataFrame
+    ) -> None:
+        """Render and persist the LSTM report plots to the report directory."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+
+        import matplotlib.pyplot as plt
+
+        self.report_dir.mkdir(parents=True, exist_ok=True)
+
+        self._plot_loss_curves(history).savefig(self.report_dir / "loss_curves.png", dpi=150)
+        plt.close("all")
+
+        per_category = (
+            predictions.groupby("actual_category")["category_correct"].mean().sort_values()
+        )
+        plt.figure(figsize=(10, 5))
+        per_category.plot(kind="bar", color="#2ca02c")
+        plt.title("Per-Category Next-Session Accuracy")
+        plt.xlabel("Category")
+        plt.ylabel("Accuracy")
+        plt.ylim(0, 1.05)
+        plt.grid(axis="y")
+        plt.tight_layout()
+        plt.savefig(self.report_dir / "category_accuracy.png", dpi=150)
+        plt.close("all")
+
+        plt.figure(figsize=(8, 5))
+        plt.hist(predictions["category_confidence"], bins=20, color="#1f77b4", edgecolor="white")
+        plt.title("Next-Category Forecast Confidence")
+        plt.xlabel("Confidence")
+        plt.ylabel("Sessions")
+        plt.grid(axis="y")
+        plt.tight_layout()
+        plt.savefig(self.report_dir / "confidence_distribution.png", dpi=150)
+        plt.close("all")
+
+        logger.info("LSTM report plots saved to: %s", self.report_dir)
 
     @staticmethod
     def _seed_everything(seed: int) -> None:

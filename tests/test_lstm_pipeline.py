@@ -24,12 +24,15 @@ def test_lstm_pipeline_trains_saves_loads_and_predicts(tmp_path):
     input_path = tmp_path / "sequences.parquet"
     model_path = tmp_path / "model.pt"
     prediction_path = tmp_path / "predictions.parquet"
+    report_dir = tmp_path / "reports"
     sequences.to_parquet(input_path, index=False)
 
     pipeline = LSTMPipeline(
         input_path=input_path,
         model_path=model_path,
+        encoder_path=tmp_path / "category_encoder.pkl",
         predictions_path=prediction_path,
+        report_dir=report_dir,
         track_mlflow=False,
         device="cpu",
         overrides={
@@ -43,9 +46,14 @@ def test_lstm_pipeline_trains_saves_loads_and_predicts(tmp_path):
     result = pipeline.run()
 
     assert model_path.is_file()
+    assert (tmp_path / "category_encoder.pkl").is_file()
     assert prediction_path.is_file()
     assert {"rmse", "mae", "category_accuracy"} <= result["metrics"].keys()
     assert len(result["predictions"]) == 3
+    assert "category_confidence" in result["predictions"].columns
+
+    for name in ("loss_curves.png", "category_accuracy.png", "confidence_distribution.png"):
+        assert (report_dir / name).is_file(), name
 
     restored = LSTMPipeline(model_path=model_path, track_mlflow=False, device="cpu")
     restored.load()

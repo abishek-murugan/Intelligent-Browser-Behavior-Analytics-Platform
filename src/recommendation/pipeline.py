@@ -26,6 +26,7 @@ class RecommendationPipeline:
         sessions_path: str | Path | None = None,
         predictions_path: str | Path | None = None,
         output_path: str | Path | None = None,
+        report_dir: str | Path | None = None,
         top_k: int | None = None,
         track_mlflow: bool = True,
     ) -> None:
@@ -34,6 +35,11 @@ class RecommendationPipeline:
         self.sessions_path = Path(sessions_path or paths["session_features_gold"]).expanduser()
         self.predictions_path = Path(predictions_path or paths["lstm_predictions"]).expanduser()
         self.output_path = Path(output_path or paths["recommendations"]).expanduser()
+        self.report_dir = Path(
+            report_dir
+            if report_dir is not None
+            else paths.get("recommendation_reports", "reports/recommendation")
+        ).expanduser()
         self.top_k = int(top_k or config["top_k"])
         self.min_sessions = int(config["min_sessions_for_catalog"])
         self.track_mlflow = track_mlflow
@@ -45,6 +51,7 @@ class RecommendationPipeline:
         recommendations = self.recommend(predictions, catalog)
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
         recommendations.to_parquet(self.output_path, index=False)
+        self._render_report_plots(recommendations)
         self._log_mlflow(recommendations, len(catalog))
         logger.info("Recommendations generated | rows=%d", len(recommendations))
         return recommendations
@@ -127,6 +134,50 @@ class RecommendationPipeline:
         counts = counts[counts["session_count"] >= self.min_sessions].copy()
         counts["historical_affinity"] = counts["session_count"] / counts["session_count"].sum()
         return counts
+
+    def _render_report_plots(self, recommendations: pd.DataFrame) -> None:
+        """Render and persist the recommendation report plots."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+
+        import matplotlib.pyplot as plt
+
+        self.report_dir.mkdir(parents=True, exist_ok=True)
+
+        score_by_rank = recommendations.groupby("recommendation_rank")["score"].mean()
+        plt.figure(figsize=(8, 5))
+        score_by_rank.plot(kind="bar", color="#1f77b4")
+        plt.title("Mean Recommendation Score by Rank")
+        plt.xlabel("Rank")
+        plt.ylabel("Mean Score")
+        plt.grid(axis="y")
+        plt.tight_layout()
+        plt.savefig(self.report_dir / "score_by_rank.png", dpi=150)
+        plt.close("all")
+
+        plt.figure(figsize=(8, 5))
+        plt.hist(recommendations["score"], bins=20, color="#ff7f0e", edgecolor="white")
+        plt.title("Recommendation Score Distribution")
+        plt.xlabel("Score")
+        plt.ylabel("Recommendations")
+        plt.grid(axis="y")
+        plt.tight_layout()
+        plt.savefig(self.report_dir / "score_distribution.png", dpi=150)
+        plt.close("all")
+
+        forecast_counts = recommendations["predicted_category"].value_counts()
+        plt.figure(figsize=(10, 5))
+        forecast_counts.plot(kind="bar", color="#2ca02c")
+        plt.title("Forecasted Next-Session Categories")
+        plt.xlabel("Category")
+        plt.ylabel("Sessions")
+        plt.grid(axis="y")
+        plt.tight_layout()
+        plt.savefig(self.report_dir / "forecast_distribution.png", dpi=150)
+        plt.close("all")
+
+        logger.info("Recommendation report plots saved to: %s", self.report_dir)
 
     def _log_mlflow(self, recommendations: pd.DataFrame, catalog_size: int) -> None:
         if not self.track_mlflow:
