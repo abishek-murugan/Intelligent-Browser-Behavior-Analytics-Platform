@@ -18,7 +18,7 @@ command: >-
   cp -r data/gold/. ${{outputs.gold}}/ &&
   cp -r models/. ${{outputs.models}}/
 
-environment: azureml:browser-analytics-env:2
+environment: azureml:browser-analytics-env:3
 
 compute: azureml:browser-analytics-cluster
 

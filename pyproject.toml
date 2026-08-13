@@ -21,10 +21,11 @@ classifiers = [
 ]
 dependencies = [
     "matplotlib>=3.11.1",
-    "mlflow>=2.24.0",
+    "mlflow==2.22.5",
+    "mlflow-skinny==2.22.5",
     "optuna>=4.5.0",
     "pandas>=2.2.3,<3.0.0",
-    "pyarrow>=25.0.0",
+    "pyarrow==19.0.1",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
     "plotly>=6.6.0",
