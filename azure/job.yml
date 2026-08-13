@@ -1,0 +1,45 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+
+# Run the full pipeline from the GitHub repository (pushed code) inside the
+# browser-analytics-env managed environment.
+# The environment must be created first:
+#   az ml environment create -f azure/env.yml -g rg-browser-analytics -w mlw-browser-analytics
+
+code: git+https://github.com/abishek-murugan/Intelligent-Browser-Behavior-Analytics-Platform.git@feature/azure
+
+command: >-
+  mkdir -p data/raw &&
+  cp -r ${{inputs.raw_data}}/* data/raw/ &&
+  PYTHONPATH=. python scripts/run_azure_pipeline.py &&
+  mkdir -p ${{outputs.silver}} ${{outputs.gold}} ${{outputs.models}} &&
+  cp -r data/silver/. ${{outputs.silver}}/ &&
+  cp -r data/gold/. ${{outputs.gold}}/ &&
+  cp -r models/. ${{outputs.models}}/
+
+environment: azureml:browser-analytics-env:1
+
+compute: azureml:browser-analytics-cluster
+
+inputs:
+  raw_data:
+    type: uri_folder
+    path: azureml://datastores/browser_analytics_storage/paths/
+    mode: download
+
+# Persist generated artifacts outside the ephemeral compute filesystem.
+# Unnamed outputs upload to the workspace default datastore.
+outputs:
+  silver:
+    type: uri_folder
+  gold:
+    type: uri_folder
+  models:
+    type: uri_folder
+
+experiment_name: browser-behavior-analytics
+display_name: browser-analytics-full-pipeline
+description: >
+  End-to-end browser behavior analytics pipeline (integration, categorization,
+  sessionization, feature engineering, clustering, LSTM forecasting,
+  recommendations) run from the pushed GitHub repository in the
+  browser-analytics-env managed environment with Azure ML MLflow tracking.

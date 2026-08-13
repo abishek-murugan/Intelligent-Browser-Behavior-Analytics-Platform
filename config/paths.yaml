@@ -11,7 +11,7 @@ paths:
   chrome_history_database: ~/.config/google-chrome/Default/History
   chrome_history_raw: data/raw/chrome_history.parquet
 
-  ram_log: data/raw/ram_log_last5days.csv
+  ram_log: data/raw/ram_usage.csv
   ram_data_raw: data/raw/ram_usage.parquet
 
   browser_ram_aligned: data/silver/browser_ram_aligned.parquet
