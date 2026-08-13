@@ -12,7 +12,7 @@ from typing import Any
 
 import yaml
 
-from src.constants import CONFIG_DIR
+from src.constants import CONFIG_DIR, PROJECT_ROOT
 from src.exceptions import (
     ConfigurationError,
     ConfigurationFileNotFoundError,
@@ -98,8 +98,28 @@ def get_config() -> dict[str, Any]:
 def get_paths() -> dict[str, Any]:
     """
     Return project paths configuration.
+
+    Relative filesystem paths are resolved against the project root so
+    the platform behaves identically regardless of the current working
+    directory (CLI, notebooks, Streamlit, tests).
     """
-    return _loader.load("paths.yaml")
+    config = _loader.load("paths.yaml")
+    config["paths"] = _resolve_paths(config.get("paths", {}))
+    return config
+
+
+def _resolve_paths(paths: dict[str, Any]) -> dict[str, Any]:
+    """Expand ``~`` and join relative filesystem paths to the project root."""
+    resolved: dict[str, Any] = {}
+    for key, value in paths.items():
+        if isinstance(value, str):
+            path = Path(value).expanduser()
+            if not path.is_absolute():
+                path = PROJECT_ROOT / path
+            resolved[key] = str(path)
+        else:
+            resolved[key] = value
+    return resolved
 
 
 def get_models() -> dict[str, Any]:
