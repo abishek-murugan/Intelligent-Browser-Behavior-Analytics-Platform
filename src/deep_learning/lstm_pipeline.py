@@ -129,6 +129,17 @@ class LSTMPipeline:
 
     def predict_next(self, session_windows: np.ndarray | list[list[list[float]]]) -> dict[str, Any]:
         """Predict one next session from exactly the previous configured sessions."""
+        distribution = self.predict_distribution(session_windows)
+        return {
+            "predicted_category": distribution["predicted_category"],
+            "category_confidence": distribution["category_confidence"],
+            "predicted_features": distribution["predicted_features"],
+        }
+
+    def predict_distribution(
+        self, session_windows: np.ndarray | list[list[list[float]]]
+    ) -> dict[str, Any]:
+        """Return the full next-category probability distribution and estimates."""
         if self.artifacts is None:
             raise PredictionError("Fit or load the LSTM model before prediction.")
         values = np.asarray(session_windows, dtype=np.float64)
@@ -149,11 +160,17 @@ class LSTMPipeline:
             )
         features = self.artifacts.scaler.inverse_transform(estimate.cpu().numpy())[0]
         probabilities = torch.softmax(logits, dim=1).cpu().numpy()[0]
+        category_index = int(probabilities.argmax())
         return {
-            "predicted_category": self.artifacts.encoder.inverse_transform(
-                [probabilities.argmax()]
-            )[0],
-            "category_confidence": float(probabilities.max()),
+            "predicted_category": self.artifacts.encoder.inverse_transform([category_index])[0],
+            "category_confidence": float(probabilities[category_index]),
+            "category_probabilities": dict(
+                zip(
+                    self.artifacts.encoder.classes_,
+                    probabilities.tolist(),
+                    strict=True,
+                )
+            ),
             "predicted_features": dict(
                 zip(self.artifacts.feature_columns, features.tolist(), strict=True)
             ),

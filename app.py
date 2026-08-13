@@ -63,12 +63,45 @@ def load_parquet_data(path_str: str) -> pd.DataFrame:
     return pd.DataFrame()
 
 
+@st.cache_resource
+def load_lstm_pipeline():
+    """Load the trained next-session LSTM with its preprocessors."""
+    from src.deep_learning.lstm_pipeline import LSTMPipeline
+
+    pipeline = LSTMPipeline(track_mlflow=False, device="cpu")
+    pipeline.load()
+    return pipeline
+
+
+@st.cache_data(ttl=300)
+def category_feature_profiles(feature_columns: tuple[str, ...]) -> pd.DataFrame:
+    """Average LSTM feature vector per dominant category from gold sessions."""
+    from src.deep_learning.dataset_builder import DatasetBuilder
+
+    frame = load_parquet_data(
+        paths.get("session_features_gold", "data/gold/session_features.parquet")
+    )
+    if frame.empty or "dominant_category" not in frame.columns:
+        return pd.DataFrame()
+    matrix, columns = DatasetBuilder()._build_feature_matrix(frame)
+    if tuple(columns) != tuple(feature_columns):
+        logger.warning(
+            "LSTM feature columns do not match gold sessions: %s != %s",
+            len(columns),
+            len(feature_columns),
+        )
+        return pd.DataFrame()
+    enriched = frame.copy()
+    enriched[columns] = matrix
+    return enriched.groupby("dominant_category")[columns].mean()
+
+
 def run_full_pipeline_action() -> None:
     """Trigger full end-to-end processing pipeline."""
     from src.clustering.pipeline import ClusteringPipeline
-    from src.feature_engineering.feature_pipeline import FeaturePipeline
     from src.deep_learning.dataset_builder import DatasetBuilder
     from src.deep_learning.lstm_pipeline import LSTMPipeline
+    from src.feature_engineering.feature_pipeline import FeaturePipeline
     from src.recommendation.pipeline import RecommendationPipeline
 
     FeaturePipeline().run()
@@ -320,59 +353,69 @@ with tab_cluster:
 # TAB 4: LSTM PREDICTION
 # -----------------------------------------------------------------------------
 with tab_lstm:
-    st.subheader("Next-Category Prediction Simulator")
-    all_categories = (
-        sorted(sessions["dominant_category"].dropna().unique().tolist())
-        if "dominant_category" in sessions.columns
-        else [
+    st.subheader("Next-Category Prediction (Trained LSTM)")
+
+    try:
+        pipeline = load_lstm_pipeline()
+    except Exception as err:
+        logger.warning("Could not load trained LSTM model: %s", err)
+        pipeline = None
+
+    if pipeline is None:
+        st.warning(
+            "No trained LSTM model found. Use the sidebar to re-run the full "
+            "pipeline so the dashboard can serve real model predictions."
+        )
+    else:
+        all_categories = sorted(pipeline.artifacts.encoder.classes_)
+        profiles = category_feature_profiles(tuple(pipeline.artifacts.feature_columns))
+        available = sorted(set(profiles.index)) if not profiles.empty else all_categories
+
+        st.caption(
+            "Select the dominant category of the previous 5 sessions; the trained "
+            "LSTM forecasts the next session's category and profile."
+        )
+
+        default_history = [
             "Search/Reference",
-            "Social Media",
-            "Productivity/Work",
+            "Search/Reference",
             "Learning/Education",
-            "Shopping",
+            "Learning/Education",
+            "Social Media",
         ]
-    )
+        default_history = [cat for cat in default_history if cat in available] or [available[0]] * 5
+        selected_seq = []
+        cols_seq = st.columns(5)
+        for i, col in enumerate(cols_seq):
+            val = default_history[i] if i < len(default_history) else available[0]
+            idx = available.index(val) if val in available else 0
+            selected_seq.append(col.selectbox(f"t-{4 - i}", available, index=idx, key=f"seq_{i}"))
 
-    st.caption(
-        "Select a 5-session category history to simulate "
-        "real-time LSTM next-category probability distributions."
-    )
+        try:
+            window = np.stack([profiles.loc[cat].to_numpy() for cat in selected_seq])
+            distribution = pipeline.predict_distribution(window)
 
-    default_history = [
-        "Search/Reference",
-        "Search/Reference",
-        "Learning/Education",
-        "Learning/Education",
-        "Social Media",
-    ]
-    selected_seq = []
-    cols_seq = st.columns(5)
-    for i, col in enumerate(cols_seq):
-        val = default_history[i] if i < len(default_history) else all_categories[0]
-        idx = all_categories.index(val) if val in all_categories else 0
-        selected_seq.append(col.selectbox(f"t-{4 - i}", all_categories, index=idx, key=f"seq_{i}"))
+            top_predicted = distribution["predicted_category"]
+            top_prob = distribution["category_confidence"]
+            st.info(f"Most likely next category: **{top_predicted}** ({top_prob:.1%})")
 
-    # Calculate transition/probability distribution
-    rng = np.random.default_rng(hash(tuple(selected_seq)) % (2**32))
-    probs = rng.dirichlet(np.ones(len(all_categories)))
-    probs_df = pd.DataFrame({"category": all_categories, "probability": probs}).sort_values(
-        "probability", ascending=False
-    )
+            probabilities = distribution["category_probabilities"]
+            probs_df = pd.DataFrame(
+                {"category": probabilities.keys(), "probability": probabilities.values()}
+            ).sort_values("probability", ascending=False)
 
-    top_predicted = probs_df.iloc[0]["category"]
-    top_prob = probs_df.iloc[0]["probability"]
-
-    st.info(f"Most likely next category: **{top_predicted}** ({top_prob:.1%})")
-
-    fig_prob = px.bar(
-        probs_df.head(8),
-        x="category",
-        y="probability",
-        color="category",
-        title="Predicted Next Category Probability Distribution",
-    )
-    fig_prob.update_layout(showlegend=False, yaxis_tickformat=".0%")
-    st.plotly_chart(fig_prob, width="stretch")
+            fig_prob = px.bar(
+                probs_df.head(8),
+                x="category",
+                y="probability",
+                color="category",
+                title="Predicted Next Category Probability Distribution (Trained LSTM)",
+            )
+            fig_prob.update_layout(showlegend=False, yaxis_tickformat=".0%")
+            st.plotly_chart(fig_prob, width="stretch")
+        except Exception as err:
+            logger.warning("LSTM prediction failed: %s", err)
+            st.warning("Prediction could not be computed from the selected history.")
 
     if not predictions.empty:
         st.subheader("Held-Out Test Dataset Performance")
