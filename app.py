@@ -7,6 +7,7 @@ Run with: ``uv run streamlit run app.py``
 from __future__ import annotations
 
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -81,7 +82,9 @@ def run_full_pipeline_action() -> None:
 paths = get_paths()["paths"]
 sessions = load_parquet_data(paths.get("session_segments", "data/gold/session_segments.parquet"))
 predictions = load_parquet_data(paths.get("lstm_predictions", "data/gold/lstm_predictions.parquet"))
-recommendations = load_parquet_data(paths.get("recommendations", "data/gold/recommendations.parquet"))
+recommendations = load_parquet_data(
+    paths.get("recommendations", "data/gold/recommendations.parquet")
+)
 events = load_parquet_data("data/silver/browser_ram_aligned.parquet")
 if events.empty:
     events = load_parquet_data("data/silver/browser_sessions.parquet")
@@ -106,7 +109,10 @@ st.sidebar.caption("Time-Based Browsing Analytics Platform v1.0.0")
 
 # Header Section
 st.title("Browsing & RAM Analyzer")
-st.caption("Deep learning behavior analysis, system RAM correlation, session clustering, and next-category forecasts.")
+st.caption(
+    "Deep learning behavior analysis, system RAM correlation, "
+    "session clustering, and next-category forecasts."
+)
 
 if sessions.empty:
     st.warning("No session datasets found. Please run the pipeline first.")
@@ -202,7 +208,9 @@ with tab_overview:
                 st.plotly_chart(fig_heat, width="stretch")
             else:
                 by_hour = sessions.groupby("hour").size().reset_index(name="sessions")
-                fig_hour = px.line(by_hour, x="hour", y="sessions", markers=True, title="Sessions by Hour")
+                fig_hour = px.line(
+                    by_hour, x="hour", y="sessions", markers=True, title="Sessions by Hour"
+                )
                 st.plotly_chart(fig_hour, width="stretch")
         else:
             st.info("Hourly breakdown unavailable.")
@@ -231,9 +239,19 @@ with tab_ram:
     if not events.empty and {"timestamp", "used_mb"} <= set(events.columns):
         df_time = events.sort_values("timestamp").head(1000)
         fig_time = go.Figure(
-            go.Scatter(x=df_time["timestamp"], y=df_time["used_mb"], mode="lines", name="Used RAM (MB)", line=dict(color="#2b5c8f"))
+            go.Scatter(
+                x=df_time["timestamp"],
+                y=df_time["used_mb"],
+                mode="lines",
+                name="Used RAM (MB)",
+                line=dict(color="#2b5c8f"),
+            )
         )
-        fig_time.update_layout(xaxis_title="Timestamp", yaxis_title="Used RAM (MB)", title="RAM Consumption Time Series")
+        fig_time.update_layout(
+            xaxis_title="Timestamp",
+            yaxis_title="Used RAM (MB)",
+            title="RAM Consumption Time Series",
+        )
         st.plotly_chart(fig_time, width="stretch")
 
     if {"session_duration_seconds", "avg_usage_percent"} <= set(sessions.columns):
@@ -246,7 +264,10 @@ with tab_ram:
             color=sessions[color_col].astype(str),
             hover_data=[c for c in ["dominant_category", "event_count"] if c in sessions.columns],
             title="Duration vs Memory Footprint",
-            labels={"avg_usage_percent": "Avg RAM Usage (%)", "session_duration_seconds": "Duration (s)"},
+            labels={
+                "avg_usage_percent": "Avg RAM Usage (%)",
+                "session_duration_seconds": "Duration (s)",
+            },
         )
         st.plotly_chart(fig_scat, width="stretch")
 
@@ -255,30 +276,40 @@ with tab_ram:
 # -----------------------------------------------------------------------------
 with tab_cluster:
     st.subheader("Session Clusters (PCA-Reduced Features)")
-    num_cols = ["session_duration_seconds", "avg_usage_percent", "peak_usage_percent", "event_count", "page_count"]
+    num_cols = [
+        "session_duration_seconds",
+        "avg_usage_percent",
+        "peak_usage_percent",
+        "event_count",
+        "page_count",
+    ]
     valid_num_cols = [c for c in num_cols if c in sessions.columns]
-    
+
     if len(valid_num_cols) >= 2 and "segment_id" in sessions.columns:
         X = sessions[valid_num_cols].fillna(0)
         X_scaled = StandardScaler().fit_transform(X)
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X_scaled)
-        
+
         df_pca = sessions.copy()
         df_pca["PCA1"] = X_pca[:, 0]
         df_pca["PCA2"] = X_pca[:, 1]
-        
+
         fig_pca = px.scatter(
             df_pca,
             x="PCA1",
             y="PCA2",
             color=df_pca["segment_id"].astype(str),
-            hover_data=[c for c in ["dominant_category", "session_duration_seconds", "avg_usage_percent"] if c in df_pca.columns],
+            hover_data=[
+                c
+                for c in ["dominant_category", "session_duration_seconds", "avg_usage_percent"]
+                if c in df_pca.columns
+            ],
             title="KMeans Session Segments Projection",
             labels={"color": "Segment"},
         )
         st.plotly_chart(fig_pca, width="stretch")
-        
+
         st.subheader("Segment Behavior Profiles")
         profile_table = sessions.groupby("segment_id")[valid_num_cols].mean().reset_index()
         st.dataframe(profile_table.style.highlight_max(axis=0, color="#d1e7dd"), width="stretch")
@@ -293,29 +324,46 @@ with tab_lstm:
     all_categories = (
         sorted(sessions["dominant_category"].dropna().unique().tolist())
         if "dominant_category" in sessions.columns
-        else ["Search/Reference", "Social Media", "Productivity/Work", "Learning/Education", "Shopping"]
+        else [
+            "Search/Reference",
+            "Social Media",
+            "Productivity/Work",
+            "Learning/Education",
+            "Shopping",
+        ]
     )
-    
-    st.caption("Select a 5-session category history to simulate real-time LSTM next-category probability distributions.")
-    
-    default_history = ["Search/Reference", "Search/Reference", "Learning/Education", "Learning/Education", "Social Media"]
+
+    st.caption(
+        "Select a 5-session category history to simulate "
+        "real-time LSTM next-category probability distributions."
+    )
+
+    default_history = [
+        "Search/Reference",
+        "Search/Reference",
+        "Learning/Education",
+        "Learning/Education",
+        "Social Media",
+    ]
     selected_seq = []
     cols_seq = st.columns(5)
     for i, col in enumerate(cols_seq):
         val = default_history[i] if i < len(default_history) else all_categories[0]
         idx = all_categories.index(val) if val in all_categories else 0
-        selected_seq.append(col.selectbox(f"t-{4-i}", all_categories, index=idx, key=f"seq_{i}"))
-    
+        selected_seq.append(col.selectbox(f"t-{4 - i}", all_categories, index=idx, key=f"seq_{i}"))
+
     # Calculate transition/probability distribution
     rng = np.random.default_rng(hash(tuple(selected_seq)) % (2**32))
     probs = rng.dirichlet(np.ones(len(all_categories)))
-    probs_df = pd.DataFrame({"category": all_categories, "probability": probs}).sort_values("probability", ascending=False)
-    
+    probs_df = pd.DataFrame({"category": all_categories, "probability": probs}).sort_values(
+        "probability", ascending=False
+    )
+
     top_predicted = probs_df.iloc[0]["category"]
     top_prob = probs_df.iloc[0]["probability"]
-    
+
     st.info(f"Most likely next category: **{top_predicted}** ({top_prob:.1%})")
-    
+
     fig_prob = px.bar(
         probs_df.head(8),
         x="category",
@@ -325,12 +373,21 @@ with tab_lstm:
     )
     fig_prob.update_layout(showlegend=False, yaxis_tickformat=".0%")
     st.plotly_chart(fig_prob, width="stretch")
-    
+
     if not predictions.empty:
         st.subheader("Held-Out Test Dataset Performance")
         st.dataframe(
             predictions[
-                [c for c in ["target_session_id", "actual_category", "predicted_category", "category_correct"] if c in predictions.columns]
+                [
+                    c
+                    for c in [
+                        "target_session_id",
+                        "actual_category",
+                        "predicted_category",
+                        "category_correct",
+                    ]
+                    if c in predictions.columns
+                ]
             ].head(20),
             width="stretch",
             hide_index=True,
@@ -344,25 +401,32 @@ with tab_recs:
     if recommendations.empty:
         st.info("Run the recommendation pipeline to generate session recommendations.")
     else:
-        target_session_col = "target_session_id" if "target_session_id" in recommendations.columns else recommendations.columns[0]
+        target_session_col = (
+            "target_session_id"
+            if "target_session_id" in recommendations.columns
+            else recommendations.columns[0]
+        )
         session_ids = sorted(recommendations[target_session_col].unique())
         selected_sid = st.selectbox("Select Target Session for Forecast", session_ids)
-        
+
         session_recs = recommendations[recommendations[target_session_col] == selected_sid]
-        
+
         if "predicted_category" in session_recs.columns:
-            st.markdown(f"### Forecasted Category: **{session_recs.iloc[0]['predicted_category']}**")
-        
+            st.markdown(
+                f"### Forecasted Category: **{session_recs.iloc[0]['predicted_category']}**"
+            )
+
         for idx, rec in session_recs.iterrows():
             severity = rec.get("severity", "medium").lower()
             badge = {"high": "🔴", "medium": "🟠", "low": "🟢"}.get(severity, "⚪")
-            title = rec.get("recommended_category", rec.get("title", f"Recommendation #{idx+1}"))
-            rationale = rec.get("rationale", "Optimizes user productivity and reduces system resource load.")
+            title = rec.get("recommended_category", rec.get("title", f"Recommendation #{idx + 1}"))
+            rationale = rec.get(
+                "rationale", "Optimizes user productivity and reduces system resource load."
+            )
             evidence = rec.get("evidence", "Driven by recent browsing pattern analysis.")
             metric = rec.get("metric", "Category Affinity & LSTM Probability")
-            
+
             with st.container(border=True):
                 st.markdown(f"#### {badge} {title}")
                 st.write(rationale)
                 st.caption(f"**Evidence:** {evidence} | **Metric:** `{metric}`")
-
