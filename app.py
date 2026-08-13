@@ -46,7 +46,7 @@ st.markdown(
     }
     </style>
     """,
-    unsafe_allow_scope=True,
+    unsafe_allow_html=True,
 )
 
 
