@@ -397,6 +397,7 @@ class ClusteringPipeline:
             mlflow.sklearn.log_model(
                 result.model,
                 "kmeans_model",
+                registered_model_name="BrowserSessionKMeansClusterer",
             )
             mlflow.sklearn.log_model(
                 self.preprocessor.scaler,

@@ -375,6 +375,17 @@ class LSTMPipeline:
                 mlflow.log_metric(
                     "validation_loss", entry["validation_loss"], step=int(entry["epoch"])
                 )
+            if self.artifacts is not None and self.artifacts.model is not None:
+                try:
+                    mlflow.pytorch.log_model(
+                        self.artifacts.model,
+                        "lstm_model",
+                        registered_model_name="NextSessionLSTMPredictor",
+                        serialization_format="pickle",
+                    )
+                except Exception as err:
+                    logger.warning("Could not register PyTorch model in MLflow registry: %s", err)
+
             mlflow.log_artifact(str(self.model_path))
             mlflow.log_artifact(str(self.predictions_path))
             return run.info.run_id
