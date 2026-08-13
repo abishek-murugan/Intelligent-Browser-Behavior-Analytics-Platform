@@ -1,12 +1,12 @@
 import pandas as pd
 import pytest
 
+from src.deep_learning.dataset_builder import DatasetBuilder
 from src.exceptions import (
     DataValidationError,
     FileReadError,
     SequenceGenerationError,
 )
-from src.deep_learning.dataset_builder import DatasetBuilder
 
 
 def _build_synthetic_features(n_sessions: int = 15) -> pd.DataFrame:
