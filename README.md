@@ -186,22 +186,25 @@ Already provisioned and reused (no new resources are created):
 | Blob containers | `raw`, `silver`, `gold` | Raw inputs / outputs |
 | Datastore | `browser_analytics_storage` | Points at the `raw` container |
 | Container registry | workspace default ACR | Hosts the built environment image |
-| GitHub repo | `abishek-murugan/Intelligent-Browser-Behavior-Analytics-Platform` | Job code source |
+| GitHub repo | `abishek-murugan/Intelligent-Browser-Behavior-Analytics-Platform` | Source-of-truth for the code (`feature/azure`) |
 
 The workspace's default Azure Container Registry is used automatically by
 managed environment builds — no extra ACR resource or credential is required.
 
 ### Push the code
 
-The job references the GitHub repository as its code source, so the code must
-be committed and pushed to the branch referenced in `azure/job.yml`
-(`feature/azure`):
+The job code source is the local project checkout (`code: ..`), which Azure ML
+uploads to the workspace and automatically records the git repository, branch,
+and commit as job properties. Push the code first so the commit is the source
+of truth:
 
 ```bash
 git add -A
-git commit -m "Add Azure ML deployment (managed env + GitHub code source)"
+git commit -m "Add Azure ML deployment (managed environment)"
 git push origin feature/azure
 ```
+
+The branch pushed is `feature/azure`, referenced by `azure/job.yml`.
 
 ### Raw data on Azure Storage
 
@@ -253,7 +256,8 @@ az ml job create -f azure/job.yml -g rg-browser-analytics -w mlw-browser-analyti
 
 The job:
 
-1. clones the referenced GitHub branch into the compute node,
+1. uploads the local project checkout (`code: ..`) and records the git
+   repo/branch/commit,
 2. downloads `raw_data` from `browser_analytics_storage` into `data/raw/`,
 3. runs `scripts/run_azure_pipeline.py` in the `browser-analytics-env` managed
    environment,
@@ -294,10 +298,10 @@ land in the local `mlruns/` directory.
 
 ```
 ┌──────────────────┐   ┌──────────────────────┐   ┌──────────────────────┐
-│ Azure Blob: raw  │──▶│ Azure ML command job │──▶│ GitHub repo (code)   │
-│ chrome_history   │   │ browser-analytics-   │   │ feature/azure branch │
-│ ram_usage.csv    │   │ cluster (CPU)        │   └──────────┬───────────┘
-│ domain_map.csv   │   └──────────┬───────────┘              │
+│ Azure Blob: raw  │──▶│ Azure ML command job │──▶│ project checkout     │
+│ chrome_history   │   │ browser-analytics-   │   │ (code: .., git-tracked│
+│ ram_usage.csv    │   │ cluster (CPU)        │   │  branch/commit)       │
+│ domain_map.csv   │   └──────────┬───────────┘   └──────────┬───────────┘
 └──────────────────┘              │                          │
                                   │ data/raw/                 │
                                   ▼                           ▼

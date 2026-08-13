@@ -1,0 +1,24 @@
+# Azure ML code-upload ignore file (works like .gitignore for az ml job uploads).
+# Keeps local data, artifacts, and tooling out of the job code snapshot.
+.git
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.eggs/
+*.egg-info/
+data/
+mlruns/
+models/
+logs/
+reports/
+notebooks/
+tests/
+azure/
+.env
+*.db
+dist/
+*.whl
+*.tar.gz
+.ipynb_checkpoints/

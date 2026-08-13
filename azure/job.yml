@@ -1,11 +1,13 @@
 $schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
 
-# Run the full pipeline from the GitHub repository (pushed code) inside the
-# browser-analytics-env managed environment.
+# Run the full pipeline from the project checkout inside the
+# browser-analytics-env managed environment. The code is pushed to GitHub
+# (source of truth) and submitted with `code: ..`; Azure ML uploads the
+# committed checkout and records the git repo/branch/commit on the job.
 # The environment must be created first:
 #   az ml environment create -f azure/env.yml -g rg-browser-analytics -w mlw-browser-analytics
 
-code: git+https://github.com/abishek-murugan/Intelligent-Browser-Behavior-Analytics-Platform.git@feature/azure
+code: ..
 
 command: >-
   mkdir -p data/raw &&
