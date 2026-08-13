@@ -428,7 +428,6 @@ class LSTMPipeline:
                         "lstm_model",
                         signature=signature,
                         registered_model_name="NextSessionLSTMPredictor",
-                        serialization_format="pickle",
                     )
                     mlflow.sklearn.log_model(self.artifacts.scaler, "scaler")
                     self._log_pickle(self.artifacts.encoder, "category_encoder.pkl")
