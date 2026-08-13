@@ -72,15 +72,15 @@ MLFLOW_ALLOW_FILE_STORE=true uv run mlflow server --backend-store-uri mlruns --h
 ```
 Open [http://localhost:5000](http://localhost:5000) in your browser.
 
-> **Note:** MLflow 3.x keeps the local filesystem backend (`mlruns`) in maintenance mode and
-> refuses to start the server against it unless `MLFLOW_ALLOW_FILE_STORE=true` is set in the
-> shell environment. The project's `.env` is **not** auto-loaded, so the flag must be exported
-> in the shell (or via `set -a; . ./.env; set +a`). The same flag already gates client-side
-> logging in `src/utils/mlflow_utils.py`.
+> **Note:** The project pins **MLflow 2.x** (`mlflow==2.22.5`), which Azure ML's
+> MLflow tracking server supports. MLflow 3.x is intentionally avoided: it calls
+> the `/mlflow/logged-models` tracking endpoint on every `log_model`, which Azure
+> ML returns 404 for, aborting the pipeline at model logging.
 >
-> If you later outgrow the file store, the supported path is to migrate to a database backend:
-> `mlflow migrate-filestore --backend-store-uri mlruns --tracking-uri sqlite:///mlruns/mlflow.db`,
-> then point `--backend-store-uri` at `sqlite:///mlruns/mlflow.db`.
+> The local filesystem backend (`mlruns`) is gated behind
+> `MLFLOW_ALLOW_FILE_STORE=true`. The project's `.env` is **not** auto-loaded, so
+> the flag must be exported in the shell (or via `set -a; . ./.env; set +a`). The
+> same flag already gates client-side logging in `src/utils/mlflow_utils.py`.
 
 ---
 
@@ -186,7 +186,7 @@ Already provisioned and reused (no new resources are created):
 | Blob containers | `raw`, `silver`, `gold` | Raw inputs / outputs |
 | Datastore | `browser_analytics_storage` | Points at the `raw` container |
 | Container registry | workspace default ACR | Hosts the built environment image |
-| GitHub repo | `abishek-murugan/Intelligent-Browser-Behavior-Analytics-Platform` | Source-of-truth for the code (`feature/azure`) |
+| GitHub repo | `abishek-murugan/Intelligent-Browser-Behavior-Analytics-Platform` | Source-of-truth for the code (`main`) |
 
 The workspace's default Azure Container Registry is used automatically by
 managed environment builds — no extra ACR resource or credential is required.
@@ -201,10 +201,11 @@ of truth:
 ```bash
 git add -A
 git commit -m "Add Azure ML deployment (managed environment)"
-git push origin feature/azure
+git push origin main
 ```
 
-The branch pushed is `feature/azure`, referenced by `azure/job.yml`.
+The code lives on the `main` branch; the submitted checkout records the git
+repository, branch, and commit as job properties.
 
 ### Raw data on Azure Storage
 
