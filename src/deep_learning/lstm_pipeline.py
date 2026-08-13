@@ -10,14 +10,16 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import torch
+from mlflow.models.signature import ModelSignature, Schema
+from mlflow.types import TensorSpec
 from sklearn.metrics import accuracy_score, mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from src.exceptions import DataValidationError, FileReadError, LSTMTrainingError, PredictionError
 from src.deep_learning.dataset_builder import DatasetBuilder
 from src.deep_learning.lstm_model import NextSessionLSTM
+from src.exceptions import DataValidationError, FileReadError, LSTMTrainingError, PredictionError
 from src.utils.config_loader import get_config, get_models, get_paths
 from src.utils.logger import get_logger
 from src.utils.mlflow_utils import get_experiment_id, get_experiment_name, setup_mlflow
@@ -247,6 +249,7 @@ class LSTMPipeline:
         weight = float(self.settings["classification_weight"])
         for epoch in range(int(self.settings["epochs"])):
             model.train()
+            epoch_loss, batches = 0.0, 0
             for batch_x, batch_y, batch_category in loader:
                 optimizer.zero_grad()
                 estimated, logits = model(batch_x.to(self.device))
@@ -255,6 +258,9 @@ class LSTMPipeline:
                 ) + weight * classification_loss(logits, batch_category.to(self.device))
                 loss.backward()
                 optimizer.step()
+                epoch_loss += float(loss.item())
+                batches += 1
+            train_loss = epoch_loss / max(batches, 1)
             model.eval()
             with torch.no_grad():
                 estimated, logits = model(
@@ -266,7 +272,7 @@ class LSTMPipeline:
                     logits, torch.tensor(val_categories, dtype=torch.long, device=self.device)
                 )
             value = float(val_loss.item())
-            history.append({"epoch": epoch + 1, "validation_loss": value})
+            history.append({"epoch": epoch + 1, "train_loss": train_loss, "validation_loss": value})
             if value < best_loss:
                 best_loss, best_state, patience = (
                     value,
@@ -362,6 +368,7 @@ class LSTMPipeline:
             return None
         import mlflow
         import mlflow.pytorch
+        import mlflow.sklearn
 
         setup_mlflow()
         experiment_id = get_experiment_id(get_experiment_name("lstm"))
@@ -370,25 +377,103 @@ class LSTMPipeline:
                 {key: value for key, value in self.settings.items() if not isinstance(value, dict)}
                 | {"n_samples": samples, "device": str(self.device)}
             )
+            if self.artifacts is not None:
+                mlflow.log_param("n_features", len(self.artifacts.feature_columns))
+                mlflow.log_param("sequence_length", self.artifacts.sequence_length)
+                mlflow.log_param("n_categories", len(self.artifacts.encoder.classes_))
             mlflow.log_metrics(metrics)
             for entry in history:
-                mlflow.log_metric(
-                    "validation_loss", entry["validation_loss"], step=int(entry["epoch"])
-                )
+                step = int(entry["epoch"])
+                mlflow.log_metric("validation_loss", entry["validation_loss"], step=step)
+                if "train_loss" in entry:
+                    mlflow.log_metric("train_loss", entry["train_loss"], step=step)
             if self.artifacts is not None and self.artifacts.model is not None:
+                signature = self._model_signature()
                 try:
                     mlflow.pytorch.log_model(
                         self.artifacts.model,
                         "lstm_model",
+                        signature=signature,
                         registered_model_name="NextSessionLSTMPredictor",
                         serialization_format="pickle",
                     )
+                    mlflow.sklearn.log_model(self.artifacts.scaler, "scaler")
+                    self._log_pickle(self.artifacts.encoder, "category_encoder.pkl")
                 except Exception as err:
-                    logger.warning("Could not register PyTorch model in MLflow registry: %s", err)
+                    logger.warning("Could not log PyTorch model to MLflow registry: %s", err)
+
+            self._log_loss_curve(history)
 
             mlflow.log_artifact(str(self.model_path))
             mlflow.log_artifact(str(self.predictions_path))
             return run.info.run_id
+
+    def _model_signature(self) -> ModelSignature:
+        feature_count = len(self.artifacts.feature_columns)
+        return ModelSignature(
+            inputs=Schema(
+                [
+                    TensorSpec(
+                        np.dtype("float32"),
+                        (-1, self.artifacts.sequence_length, feature_count),
+                        name="sequence",
+                    )
+                ]
+            ),
+            outputs=Schema(
+                [
+                    TensorSpec(np.dtype("float32"), (-1, feature_count), name="features"),
+                    TensorSpec(
+                        np.dtype("float32"),
+                        (-1, len(self.artifacts.encoder.classes_)),
+                        name="category_logits",
+                    ),
+                ]
+            ),
+        )
+
+    @staticmethod
+    def _log_pickle(obj: Any, filename: str) -> None:
+        import pickle
+        import tempfile
+
+        import mlflow
+
+        with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as file:
+            pickle.dump(obj, file)
+            file.flush()
+            mlflow.log_artifact(file.name, artifact_path=filename)
+
+    @staticmethod
+    def _log_loss_curve(history: list[dict[str, float]]) -> None:
+        import tempfile
+
+        import matplotlib
+
+        matplotlib.use("Agg")
+
+        import matplotlib.pyplot as plt
+        import mlflow
+
+        epochs = [entry["epoch"] for entry in history]
+        validation = [entry["validation_loss"] for entry in history]
+        training = [entry.get("train_loss") for entry in history]
+
+        plt.figure(figsize=(8, 5))
+        if any(value is not None for value in training):
+            plt.plot(epochs, training, label="Training Loss", marker="o")
+        plt.plot(epochs, validation, label="Validation Loss", marker="o", color="#1f77b4")
+        plt.title("Multi-Task LSTM Loss Curves")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as file:
+            plt.savefig(file.name, dpi=150)
+            plt.close()
+            mlflow.log_artifact(file.name, artifact_path="figures")
 
     @staticmethod
     def _seed_everything(seed: int) -> None:
