@@ -170,6 +170,10 @@ class LSTMTrainingError(DeepLearningError):
     """Raised during LSTM training."""
 
 
+class LSTMTuningError(DeepLearningError):
+    """Raised while tuning LSTM hyperparameters."""
+
+
 class RNNTrainingError(DeepLearningError):
     """Raised during RNN training."""
 
