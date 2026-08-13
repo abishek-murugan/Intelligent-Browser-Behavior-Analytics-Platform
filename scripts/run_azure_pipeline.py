@@ -32,9 +32,7 @@ def prepare_raw_inputs() -> None:
         return
 
     if not csv_path.is_file():
-        raise SystemExit(
-            f"Neither {parquet_path} nor {csv_path} was found under data/raw."
-        )
+        raise SystemExit(f"Neither {parquet_path} nor {csv_path} was found under data/raw.")
 
     loader = RAMDataLoader()
     logger.info("Converting RAM usage CSV to Parquet: %s", csv_path)
