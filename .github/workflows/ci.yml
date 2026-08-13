@@ -40,3 +40,30 @@ jobs:
 
       - name: Run Tests
         run: uv run pytest --cov=src --cov-report=term-missing
+
+      - name: Generate synthetic raw data
+        run: uv run python scripts/make_synthetic_data.py
+
+      - name: Run full pipeline
+        run: uv run python scripts/run_full_pipeline.py
+
+      - name: Execute notebooks
+        run: |
+          uv run jupyter nbconvert --to notebook --execute --inplace \
+            --ExecutePreprocessor.timeout=900 notebooks/03_lstm_next_session.ipynb
+          uv run jupyter nbconvert --to notebook --execute --inplace \
+            --ExecutePreprocessor.timeout=600 notebooks/04_recommendations.ipynb
+
+      - name: Verify notebooks ran without errors
+        run: |
+          uv run python -c "
+          import nbformat, sys
+          for path in ['notebooks/03_lstm_next_session.ipynb', 'notebooks/04_recommendations.ipynb']:
+              nb = nbformat.read(path, as_version=4)
+              errors = [o for c in nb.cells if c.cell_type == 'code'
+                        for o in c.outputs if o.output_type == 'error']
+              if errors:
+                  print(f'{path}: {len(errors)} error output(s)')
+                  sys.exit(1)
+              print(f'{path}: OK')
+          "

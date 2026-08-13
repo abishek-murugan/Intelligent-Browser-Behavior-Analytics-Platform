@@ -23,6 +23,7 @@ from src.exceptions import (
     FileReadError,
     FileWriteError,
 )
+from src.utils.config_loader import get_paths
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -70,7 +71,10 @@ class DomainMapper:
         self.output_path = Path(
             output_path
             if output_path is not None
-            else "data/silver/browser_ram_categorized.parquet"
+            else get_paths()["paths"].get(
+                "browser_ram_categorized",
+                "data/silver/browser_ram_categorized.parquet",
+            )
         ).expanduser()
 
     @staticmethod

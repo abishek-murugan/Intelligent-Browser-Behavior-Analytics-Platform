@@ -80,7 +80,7 @@ DEFAULT_BATCH_SIZE = 32
 # MLflow
 # =============================================================================
 
-DEFAULT_MLFLOW_TRACKING_URI = "mlruns"
+DEFAULT_MLFLOW_TRACKING_URI = (PROJECT_ROOT / "mlruns").as_uri()
 
 MLFLOW_CLUSTERING_EXPERIMENT = "browser-behavior-clustering"
 
@@ -107,16 +107,6 @@ RECOMMENDATION_REPORT_DIR = REPORT_DIR / "recommendation"
 DEFAULT_HOST = "0.0.0.0"
 
 DEFAULT_PORT = 8501
-
-# =============================================================================
-# Databricks
-# =============================================================================
-
-BRONZE_TABLE = "browser_bronze"
-
-SILVER_TABLE = "browser_silver"
-
-GOLD_TABLE = "browser_gold"
 
 # =============================================================================
 # Recommendation Engine

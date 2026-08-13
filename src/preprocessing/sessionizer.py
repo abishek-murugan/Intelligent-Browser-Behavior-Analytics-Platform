@@ -117,7 +117,7 @@ class Sessionizer:
 
         self.inactivity_threshold_minutes = float(inactivity_threshold_minutes)
 
-        self.inactivity_threshold = pd.Timedelta(minutes=self.inactivity_threshold_minutes)
+        self.inactivity_threshold = pd.Timedelta(minutes=float(self.inactivity_threshold_minutes))
 
     def run(self) -> pd.DataFrame:
         """

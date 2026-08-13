@@ -27,6 +27,7 @@ data/gold/
 models/*.pth
 models/*.pt
 models/*.onnx
+models/*.pkl
 
 # MLflow
 mlruns/

@@ -5,7 +5,7 @@ Centralizes MLflow tracking URI resolution and experiment setup so
 all pipeline stages (clustering, LSTM, recommendation) log to a
 consistent backend. The tracking URI can be overridden at runtime
 through the ``MLFLOW_TRACKING_URI`` environment variable, which is
-useful when switching to a remote tracking server (e.g. Azure ML).
+useful when switching to a remote tracking server later.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from src.constants import (
     MLFLOW_LSTM_EXPERIMENT,
     MLFLOW_LSTM_TUNING_EXPERIMENT,
     MLFLOW_RECOMMENDATION_EXPERIMENT,
+    PROJECT_ROOT,
 )
 from src.utils.config_loader import get_config
 from src.utils.logger import get_logger
@@ -40,10 +41,11 @@ def get_tracking_uri() -> str:
     Resolve the MLflow tracking URI.
 
     Priority: the ``MLFLOW_TRACKING_URI`` environment variable, then
-    the configured value, then the local default.
+    the configured value, then the local default. Ensures relative paths
+    are resolved absolutely against PROJECT_ROOT to prevent directory fragmentation.
     """
 
-    return os.environ.get(
+    raw_uri = os.environ.get(
         "MLFLOW_TRACKING_URI",
         get_config()
         .get("mlflow", {})
@@ -52,6 +54,14 @@ def get_tracking_uri() -> str:
             DEFAULT_MLFLOW_TRACKING_URI,
         ),
     )
+
+    if not raw_uri or raw_uri == "mlruns":
+        return (PROJECT_ROOT / "mlruns").as_uri()
+
+    if "://" not in raw_uri and not os.path.isabs(raw_uri):
+        return (PROJECT_ROOT / raw_uri).as_uri()
+
+    return raw_uri
 
 
 def setup_mlflow() -> None:

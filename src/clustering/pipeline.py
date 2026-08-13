@@ -51,6 +51,8 @@ class ClusteringPipeline:
         input_path: str | Path | None = None,
         output_path: str | Path | None = None,
         report_dir: str | Path | None = None,
+        preprocessor_path: str | Path | None = None,
+        kmeans_path: str | Path | None = None,
         preprocessor: ClusteringPreprocessor | None = None,
         segmenter: KMeansSegmenter | None = None,
         profiler: SegmentProfiler | None = None,
@@ -116,6 +118,24 @@ class ClusteringPipeline:
             else paths.get(
                 "clustering_reports",
                 "reports/clustering",
+            )
+        ).expanduser()
+
+        self.preprocessor_path = Path(
+            preprocessor_path
+            if preprocessor_path is not None
+            else paths.get(
+                "clustering_preprocessor",
+                "models/clustering_preprocessor.pkl",
+            )
+        ).expanduser()
+
+        self.kmeans_path = Path(
+            kmeans_path
+            if kmeans_path is not None
+            else paths.get(
+                "kmeans_model",
+                "models/kmeans_model.pkl",
             )
         ).expanduser()
 
@@ -333,14 +353,16 @@ class ClusteringPipeline:
             self.report_dir / "segment_profile.csv",
         )
 
-        preprocessor_path = self.output_path.parent / "clustering_preprocessor.pkl"
+        preprocessor_path = self.preprocessor_path
+        kmeans_path = self.kmeans_path
+        preprocessor_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.preprocessor.save(preprocessor_path)
 
-        with (self.output_path.parent / "kmeans_model.pkl").open("wb") as file:
+        with kmeans_path.open("wb") as file:
             pickle.dump(result.model, file)
 
-        logger.info("KMeans model saved to %s", self.output_path.parent)
+        logger.info("KMeans model saved to %s", preprocessor_path.parent)
 
     def _log_mlflow(
         self,
@@ -397,6 +419,7 @@ class ClusteringPipeline:
             mlflow.sklearn.log_model(
                 result.model,
                 "kmeans_model",
+                registered_model_name="BrowserSessionKMeansClusterer",
             )
             mlflow.sklearn.log_model(
                 self.preprocessor.scaler,

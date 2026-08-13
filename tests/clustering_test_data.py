@@ -87,7 +87,7 @@ def build_features(
         {
             "session_id": np.arange(n_sessions) + 1,
             "session_start": timestamps,
-            "session_end": timestamps + pd.Timedelta(minutes=45),
+            "session_end": timestamps + pd.Timedelta("45 minutes"),
             "hour": base[:, 0].round().astype(int),
             "day_of_week_num": rng.integers(0, 7, size=n_sessions),
             "is_weekend": rng.integers(0, 2, size=n_sessions).astype(bool),

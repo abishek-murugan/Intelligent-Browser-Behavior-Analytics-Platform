@@ -28,6 +28,8 @@ paths:
 
   lstm_model: models/lstm_next_session.pt
   lstm_encoder: models/category_encoder.pkl
+  clustering_preprocessor: models/clustering_preprocessor.pkl
+  kmeans_model: models/kmeans_model.pkl
 
   clustering_reports: reports/clustering
   lstm_reports: reports/lstm

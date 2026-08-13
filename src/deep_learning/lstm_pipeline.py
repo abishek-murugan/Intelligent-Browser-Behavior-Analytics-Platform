@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pickle
 import random
 from dataclasses import dataclass
 from pathlib import Path
@@ -10,14 +11,16 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import torch
+from mlflow.models.signature import ModelSignature, Schema
+from mlflow.types import TensorSpec
 from sklearn.metrics import accuracy_score, mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
+from src.deep_learning.dataset_builder import DatasetBuilder
+from src.deep_learning.lstm_model import NextSessionLSTM
 from src.exceptions import DataValidationError, FileReadError, LSTMTrainingError, PredictionError
-from src.modeling.dataset_builder import DatasetBuilder
-from src.modeling.lstm_model import NextSessionLSTM
 from src.utils.config_loader import get_config, get_models, get_paths
 from src.utils.logger import get_logger
 from src.utils.mlflow_utils import get_experiment_id, get_experiment_name, setup_mlflow
@@ -50,7 +53,9 @@ class LSTMPipeline:
         self,
         input_path: str | Path | None = None,
         model_path: str | Path | None = None,
+        encoder_path: str | Path | None = None,
         predictions_path: str | Path | None = None,
+        report_dir: str | Path | None = None,
         track_mlflow: bool = True,
         device: str | None = None,
         overrides: dict[str, Any] | None = None,
@@ -60,7 +65,11 @@ class LSTMPipeline:
         self.settings.update(overrides or {})
         self.input_path = Path(input_path or paths["behavior_sequences"]).expanduser()
         self.model_path = Path(model_path or paths["lstm_model"]).expanduser()
+        self.encoder_path = Path(encoder_path or paths["lstm_encoder"]).expanduser()
         self.predictions_path = Path(predictions_path or paths["lstm_predictions"]).expanduser()
+        self.report_dir = Path(
+            report_dir if report_dir is not None else paths.get("lstm_reports", "reports/lstm")
+        ).expanduser()
         self.track_mlflow = track_mlflow
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
         self.artifacts: LSTMArtifacts | None = None
@@ -78,6 +87,7 @@ class LSTMPipeline:
         metrics, predictions = self.evaluate(splits["test"])
         self.save()
         self._save_predictions(predictions)
+        self._render_report_plots(history, predictions)
         run_id = self._log_mlflow(metrics, history, len(frame))
         logger.info(
             "LSTM pipeline completed | test_samples=%d | rmse=%.4f",
@@ -106,6 +116,8 @@ class LSTMPipeline:
         actual = self.artifacts.scaler.inverse_transform(targets)
         category_ids = logits.argmax(dim=1).cpu().numpy()
         labels = self.artifacts.encoder.inverse_transform(category_ids)
+        probabilities = torch.softmax(logits, dim=1).cpu().numpy()
+        confidences = probabilities[np.arange(len(category_ids)), category_ids]
         metrics = {
             "mse": float(mean_squared_error(actual, predicted)),
             "rmse": float(mean_squared_error(actual, predicted) ** 0.5),
@@ -118,6 +130,7 @@ class LSTMPipeline:
                 "actual_category": categories,
                 "predicted_category": labels,
                 "category_correct": categories == labels,
+                "category_confidence": confidences,
             }
         )
         for index, name in enumerate(self.artifacts.feature_columns):
@@ -127,6 +140,17 @@ class LSTMPipeline:
 
     def predict_next(self, session_windows: np.ndarray | list[list[list[float]]]) -> dict[str, Any]:
         """Predict one next session from exactly the previous configured sessions."""
+        distribution = self.predict_distribution(session_windows)
+        return {
+            "predicted_category": distribution["predicted_category"],
+            "category_confidence": distribution["category_confidence"],
+            "predicted_features": distribution["predicted_features"],
+        }
+
+    def predict_distribution(
+        self, session_windows: np.ndarray | list[list[list[float]]]
+    ) -> dict[str, Any]:
+        """Return the full next-category probability distribution and estimates."""
         if self.artifacts is None:
             raise PredictionError("Fit or load the LSTM model before prediction.")
         values = np.asarray(session_windows, dtype=np.float64)
@@ -147,11 +171,17 @@ class LSTMPipeline:
             )
         features = self.artifacts.scaler.inverse_transform(estimate.cpu().numpy())[0]
         probabilities = torch.softmax(logits, dim=1).cpu().numpy()[0]
+        category_index = int(probabilities.argmax())
         return {
-            "predicted_category": self.artifacts.encoder.inverse_transform(
-                [probabilities.argmax()]
-            )[0],
-            "category_confidence": float(probabilities.max()),
+            "predicted_category": self.artifacts.encoder.inverse_transform([category_index])[0],
+            "category_confidence": float(probabilities[category_index]),
+            "category_probabilities": dict(
+                zip(
+                    self.artifacts.encoder.classes_,
+                    probabilities.tolist(),
+                    strict=True,
+                )
+            ),
             "predicted_features": dict(
                 zip(self.artifacts.feature_columns, features.tolist(), strict=True)
             ),
@@ -182,6 +212,11 @@ class LSTMPipeline:
             self.model_path,
         )
         logger.info("LSTM model saved: %s", self.model_path)
+
+        self.encoder_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.encoder_path.open("wb") as file:
+            pickle.dump(self.artifacts.encoder, file)
+        logger.info("Category encoder saved: %s", self.encoder_path)
         return self.model_path
 
     def load(self) -> LSTMArtifacts:
@@ -247,6 +282,7 @@ class LSTMPipeline:
         weight = float(self.settings["classification_weight"])
         for epoch in range(int(self.settings["epochs"])):
             model.train()
+            epoch_loss, batches = 0.0, 0
             for batch_x, batch_y, batch_category in loader:
                 optimizer.zero_grad()
                 estimated, logits = model(batch_x.to(self.device))
@@ -255,6 +291,9 @@ class LSTMPipeline:
                 ) + weight * classification_loss(logits, batch_category.to(self.device))
                 loss.backward()
                 optimizer.step()
+                epoch_loss += float(loss.item())
+                batches += 1
+            train_loss = epoch_loss / max(batches, 1)
             model.eval()
             with torch.no_grad():
                 estimated, logits = model(
@@ -266,7 +305,7 @@ class LSTMPipeline:
                     logits, torch.tensor(val_categories, dtype=torch.long, device=self.device)
                 )
             value = float(val_loss.item())
-            history.append({"epoch": epoch + 1, "validation_loss": value})
+            history.append({"epoch": epoch + 1, "train_loss": train_loss, "validation_loss": value})
             if value < best_loss:
                 best_loss, best_state, patience = (
                     value,
@@ -362,6 +401,7 @@ class LSTMPipeline:
             return None
         import mlflow
         import mlflow.pytorch
+        import mlflow.sklearn
 
         setup_mlflow()
         experiment_id = get_experiment_id(get_experiment_name("lstm"))
@@ -370,14 +410,151 @@ class LSTMPipeline:
                 {key: value for key, value in self.settings.items() if not isinstance(value, dict)}
                 | {"n_samples": samples, "device": str(self.device)}
             )
+            if self.artifacts is not None:
+                mlflow.log_param("n_features", len(self.artifacts.feature_columns))
+                mlflow.log_param("sequence_length", self.artifacts.sequence_length)
+                mlflow.log_param("n_categories", len(self.artifacts.encoder.classes_))
             mlflow.log_metrics(metrics)
             for entry in history:
-                mlflow.log_metric(
-                    "validation_loss", entry["validation_loss"], step=int(entry["epoch"])
-                )
+                step = int(entry["epoch"])
+                mlflow.log_metric("validation_loss", entry["validation_loss"], step=step)
+                if "train_loss" in entry:
+                    mlflow.log_metric("train_loss", entry["train_loss"], step=step)
+            if self.artifacts is not None and self.artifacts.model is not None:
+                signature = self._model_signature()
+                try:
+                    mlflow.pytorch.log_model(
+                        self.artifacts.model,
+                        "lstm_model",
+                        signature=signature,
+                        registered_model_name="NextSessionLSTMPredictor",
+                        serialization_format="pickle",
+                    )
+                    mlflow.sklearn.log_model(self.artifacts.scaler, "scaler")
+                    self._log_pickle(self.artifacts.encoder, "category_encoder.pkl")
+                except Exception as err:
+                    logger.warning("Could not log PyTorch model to MLflow registry: %s", err)
+
+            self._log_loss_curve(history)
+
             mlflow.log_artifact(str(self.model_path))
             mlflow.log_artifact(str(self.predictions_path))
             return run.info.run_id
+
+    def _model_signature(self) -> ModelSignature:
+        feature_count = len(self.artifacts.feature_columns)
+        return ModelSignature(
+            inputs=Schema(
+                [
+                    TensorSpec(
+                        np.dtype("float32"),
+                        (-1, self.artifacts.sequence_length, feature_count),
+                        name="sequence",
+                    )
+                ]
+            ),
+            outputs=Schema(
+                [
+                    TensorSpec(np.dtype("float32"), (-1, feature_count), name="features"),
+                    TensorSpec(
+                        np.dtype("float32"),
+                        (-1, len(self.artifacts.encoder.classes_)),
+                        name="category_logits",
+                    ),
+                ]
+            ),
+        )
+
+    @staticmethod
+    def _log_pickle(obj: Any, filename: str) -> None:
+        import pickle
+        import tempfile
+
+        import mlflow
+
+        with tempfile.NamedTemporaryFile(suffix=".pkl", delete=False) as file:
+            pickle.dump(obj, file)
+            file.flush()
+            mlflow.log_artifact(file.name, artifact_path=filename)
+
+    @staticmethod
+    def _log_loss_curve(history: list[dict[str, float]]) -> None:
+        import tempfile
+
+        import matplotlib.pyplot as plt
+        import mlflow
+
+        figure = LSTMPipeline._plot_loss_curves(history)
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as file:
+            figure.savefig(file.name, dpi=150)
+            plt.close(figure)
+            mlflow.log_artifact(file.name, artifact_path="figures")
+
+    @staticmethod
+    def _plot_loss_curves(history: list[dict[str, float]]):
+        """Return the train/validation loss figure for the training history."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+
+        import matplotlib.pyplot as plt
+
+        epochs = [entry["epoch"] for entry in history]
+        validation = [entry["validation_loss"] for entry in history]
+        training = [entry.get("train_loss") for entry in history]
+
+        plt.figure(figsize=(8, 5))
+        if any(value is not None for value in training):
+            plt.plot(epochs, training, label="Training Loss", marker="o")
+        plt.plot(epochs, validation, label="Validation Loss", marker="o", color="#1f77b4")
+        plt.title("Multi-Task LSTM Loss Curves")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+        return plt.gcf()
+
+    def _render_report_plots(
+        self, history: list[dict[str, float]], predictions: pd.DataFrame
+    ) -> None:
+        """Render and persist the LSTM report plots to the report directory."""
+        import matplotlib
+
+        matplotlib.use("Agg")
+
+        import matplotlib.pyplot as plt
+
+        self.report_dir.mkdir(parents=True, exist_ok=True)
+
+        self._plot_loss_curves(history).savefig(self.report_dir / "loss_curves.png", dpi=150)
+        plt.close("all")
+
+        per_category = (
+            predictions.groupby("actual_category")["category_correct"].mean().sort_values()
+        )
+        plt.figure(figsize=(10, 5))
+        per_category.plot(kind="bar", color="#2ca02c")
+        plt.title("Per-Category Next-Session Accuracy")
+        plt.xlabel("Category")
+        plt.ylabel("Accuracy")
+        plt.ylim(0, 1.05)
+        plt.grid(axis="y")
+        plt.tight_layout()
+        plt.savefig(self.report_dir / "category_accuracy.png", dpi=150)
+        plt.close("all")
+
+        plt.figure(figsize=(8, 5))
+        plt.hist(predictions["category_confidence"], bins=20, color="#1f77b4", edgecolor="white")
+        plt.title("Next-Category Forecast Confidence")
+        plt.xlabel("Confidence")
+        plt.ylabel("Sessions")
+        plt.grid(axis="y")
+        plt.tight_layout()
+        plt.savefig(self.report_dir / "confidence_distribution.png", dpi=150)
+        plt.close("all")
+
+        logger.info("LSTM report plots saved to: %s", self.report_dir)
 
     @staticmethod
     def _seed_everything(seed: int) -> None:

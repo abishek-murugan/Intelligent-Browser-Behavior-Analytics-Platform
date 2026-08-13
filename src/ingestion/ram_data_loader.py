@@ -125,6 +125,7 @@ class RAMDataLoader:
             dataframe["timestamp"],
             errors="coerce",
             utc=True,
+            format="mixed",
         )
 
         if dataframe["timestamp"].isna().any():

@@ -1,48 +1,152 @@
 # Time-Based Browsing Pattern Analyzer
 
-### Deep learning analysis of time-based browsing patterns with RAM usage correlation.
+### Deep learning analysis of time-based user browsing patterns with system RAM correlation.
 
-Modern web users generate thousands of browsing events every day. Organizations can use this behavioral data to understand productivity, browsing habits, predict future user behavior, detect anomalies, and generate personalized recommendations. This project builds an end-to-end analytics platform that processes browser history and system usage logs using Databricks and PySpark, applies machine learning and deep learning models to extract insights, and presents them through an interactive dashboard.
+Modern web users generate thousands of browsing events every day. Organizations and power users can utilize this behavioral data to understand productivity patterns, optimize system memory allocation, predict future user behavior, detect workflow fragmentation, and deliver personalized contextual recommendations. 
 
-### Domain
+This repository provides an end-to-end production ML/DL analytics platform that processes browser history and system memory telemetry logs, applies unsupervised **KMeans clustering** and deep **PyTorch LSTM multi-task sequence models**, tracks all experiments in **MLflow**, and serves an interactive **Streamlit dashboard**.
 
-Productivity & Digital Behavior Analytics Platform
+---
 
-## Completed modelling stages
+## 🚀 Domain & System Architecture
 
-The project now includes the following production-oriented workflow:
-
-1. Session clustering with KMeans and MLflow experiment tracking.
-2. A PyTorch multi-task LSTM that uses the previous **five browsing sessions**
-   to forecast the next session's numeric profile and dominant category.
-3. A transparent recommendation engine that puts the LSTM category forecast
-   first, then ranks historically frequent categories.
-4. A Streamlit dashboard that displays session segmentation, forecast quality,
-   category forecasts, and per-session recommendations.
-
-Each stage emits structured logs and tracks its metrics/artifacts in MLflow.
-
-## Run the workflow
-
-Run these commands from the repository root after installing the project
-dependencies with `uv sync`:
-
-```bash
-# Rebuild Gold data using five-session windows, train the model, and log MLflow artifacts.
-uv run python -c "from src.modeling.dataset_builder import DatasetBuilder; from src.modeling.lstm_pipeline import LSTMPipeline; DatasetBuilder(sequence_length=5).run(); LSTMPipeline().run()"
-
-# Produce prediction-aware category recommendations.
-uv run python -c "from src.recommendation.pipeline import RecommendationPipeline; RecommendationPipeline().run()"
-
-# Launch the dashboard.
-uv run streamlit run app.py
+```
+                                 ┌────────────────────────┐
+                                 │ Chrome Browsing Logs   │
+                                 └───────────┬────────────┘
+                                             │
+                                             ▼
+ ┌────────────────────────┐      ┌────────────────────────┐
+ │ System RAM Telemetry   ├─────►│ Data Integrator        │
+ └────────────────────────┘      └───────────┬────────────┘
+                                             │
+                                             ▼
+                                 ┌────────────────────────┐
+                                 │ Feature Engineering    │
+                                 └───────────┬────────────┘
+                                             │
+                  ┌──────────────────────────┴──────────────────────────┐
+                  ▼                                                     ▼
+     ┌────────────────────────┐                            ┌────────────────────────┐
+     │ KMeans Clustering      │                            │ PyTorch Multi-Task LSTM│
+     └───────────┬────────────┘                            └───────────┬────────────┘
+                 │                                                     │
+                 └──────────────────────────┬──────────────────────────┘
+                                            ▼
+                                ┌────────────────────────┐
+                                │ Recommendation Engine  │
+                                └───────────┬────────────┘
+                                            │
+                                            ▼
+                                ┌────────────────────────┐
+                                │ Streamlit Dashboard    │
+                                └────────────────────────┘
 ```
 
-The same workflows are available as dedicated notebooks:
+---
 
-- `notebooks/03_lstm_next_session.ipynb`
-- `notebooks/04_recommendations.ipynb`
+## ✨ Key Features
 
-Artifacts are written under `data/gold/`, `models/`, and MLflow's configured
-tracking URI (`mlruns` locally by default). Set `MLFLOW_TRACKING_URI` to use a
-remote MLflow server.
+1. **Integrated Data Ingestion**: Synchronizes Chrome history with 5-second interval RAM telemetry.
+2. **KMeans Session Clustering**: Segments browsing sessions based on duration, switching rate, page volume, and RAM consumption profiles.
+3. **PyTorch Multi-Task LSTM**: Uses sliding 5-session windows to forecast:
+   - Next-session dominant category (classification).
+   - Continuous next-session duration and memory footprint (regression).
+4. **Contextual Recommendation Engine**: Combines model predictions with rule-based heuristics to yield severity-ranked actionable advice (🔴 High, 🟠 Medium, 🟢 Low).
+5. **Centralized MLflow Tracking**: Logs all runs, metrics, parameters, loss curves, and model state dicts to an absolute local store.
+6. **Interactive Streamlit Dashboard**: Provides real-time PCA cluster visualizers, RAM time series, and an interactive next-category prediction sandbox.
+
+---
+
+## 📊 MLflow Tracking Server
+
+All pipelines log tracking data centrally to `<PROJECT_ROOT>/mlruns`. Relative path resolution is configured to eliminate fragmented tracking folders.
+
+### Launch MLflow UI
+To inspect training loss curves, hyperparameter runs, and saved model artifacts:
+
+```bash
+uv run mlflow ui --port 5000
+```
+Open [http://localhost:5000](http://localhost:5000) in your browser.
+
+---
+
+## 🛠️ Quickstart & Environment Setup
+
+This project uses `uv` for fast, reproducible environment and package management.
+
+### 1. Install Dependencies
+```bash
+uv sync
+```
+
+### 2. Run Complete End-to-End Pipeline
+```bash
+# Requires raw inputs under data/raw (Chrome history, RAM usage, domain map).
+# Optional: generate a deterministic synthetic dataset first (no real profile needed):
+uv run python scripts/make_synthetic_data.py
+
+# Full chain: integration -> categorization -> sessionization -> feature
+# engineering -> clustering -> LSTM training/prediction -> recommendations.
+uv run python scripts/run_full_pipeline.py
+```
+
+### 3. Launch Streamlit Analytics Dashboard
+```bash
+uv run streamlit run app.py
+```
+Open [http://localhost:8501](http://localhost:8501) to view the interactive dashboard.
+
+---
+
+## 📓 Jupyter Notebooks
+
+Interactive, educational notebooks for experimentation and analysis are located under `notebooks/`:
+
+- `notebooks/01_eda_browser_ram.ipynb`: Exploratory Data Analysis & RAM Correlation.
+- `notebooks/02_clustering.ipynb`: Unsupervised KMeans Session Segmentation & PCA.
+- `notebooks/03_lstm_next_session.ipynb`: Deep Learning PyTorch Multi-Task LSTM Training & Evaluation.
+- `notebooks/04_recommendations.ipynb`: Prediction-Driven Recommendation Engine & Severity Ranking.
+
+---
+
+## 📁 Project Directory Structure
+
+```
+├── README.md
+├── app.py                       # Interactive Streamlit Dashboard
+├── config/                      # YAML configuration files
+├── data/                        # Processed Parquet artifacts (raw, bronze, silver, gold)
+├── logs/                        # System execution log files
+├── mlruns/                      # Centralized MLflow experiment store
+├── models/                      # PyTorch and Scikit-Learn saved models
+├── notebooks/                   # Step-by-step experiment notebooks
+├── pyproject.toml               # Project metadata & dependencies
+├── reports/                     # Markdown project reports & figures
+│   ├── Final_Project_Report.md
+│   ├── clustering/
+│   ├── lstm/
+│   ├── recommendation/
+│   └── images/                  # Generated chart images
+├── scripts/                     # Synthetic data generation & full-pipeline CLI
+├── src/                         # Production Python source modules
+│   ├── clustering/
+│   ├── deep_learning/
+│   ├── feature_engineering/
+│   ├── ingestion/
+│   ├── preprocessing/
+│   ├── recommendation/
+│   └── utils/
+└── tests/                       # Pytest automated test suite
+```
+
+---
+
+## 🧪 Testing & Verification
+
+Run the full pytest suite:
+
+```bash
+uv run pytest
+```

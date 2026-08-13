@@ -1,12 +1,12 @@
 import pandas as pd
 import pytest
 
+from src.deep_learning.dataset_builder import DatasetBuilder
 from src.exceptions import (
     DataValidationError,
     FileReadError,
     SequenceGenerationError,
 )
-from src.modeling.dataset_builder import DatasetBuilder
 
 
 def _build_synthetic_features(n_sessions: int = 15) -> pd.DataFrame:
@@ -21,7 +21,7 @@ def _build_synthetic_features(n_sessions: int = 15) -> pd.DataFrame:
         {
             "session_id": list(range(1, n_sessions + 1)),
             "session_start": timestamps,
-            "session_end": timestamps + pd.Timedelta(minutes=30),
+            "session_end": timestamps + pd.Timedelta("30 minutes"),
             "hour": timestamps.hour,
             "is_weekend": (timestamps.dayofweek >= 5),
             "time_of_day": ["Morning"] * n_sessions,

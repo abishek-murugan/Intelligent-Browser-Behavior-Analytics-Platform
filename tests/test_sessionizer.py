@@ -33,7 +33,7 @@ def test_sessionize_two_sessions(sessionizer, categorized_frame):
 
 
 def test_sessionize_custom_threshold(sessionizer, categorized_frame):
-    sessionizer.inactivity_threshold = pd.Timedelta(minutes=1)
+    sessionizer.inactivity_threshold = pd.Timedelta("1 minute")
 
     result = sessionizer.sessionize(categorized_frame())
 
