@@ -66,9 +66,21 @@ All pipelines log tracking data centrally to `<PROJECT_ROOT>/mlruns`. Relative p
 To inspect training loss curves, hyperparameter runs, and saved model artifacts:
 
 ```bash
-uv run mlflow ui --port 5000
+MLFLOW_ALLOW_FILE_STORE=true uv run mlflow server --backend-store-uri mlruns --host 127.0.0.1 --port 5000
+# equivalent shorthand:
+# MLFLOW_ALLOW_FILE_STORE=true uv run mlflow ui --backend-store-uri mlruns --port 5000
 ```
 Open [http://localhost:5000](http://localhost:5000) in your browser.
+
+> **Note:** MLflow 3.x keeps the local filesystem backend (`mlruns`) in maintenance mode and
+> refuses to start the server against it unless `MLFLOW_ALLOW_FILE_STORE=true` is set in the
+> shell environment. The project's `.env` is **not** auto-loaded, so the flag must be exported
+> in the shell (or via `set -a; . ./.env; set +a`). The same flag already gates client-side
+> logging in `src/utils/mlflow_utils.py`.
+>
+> If you later outgrow the file store, the supported path is to migrate to a database backend:
+> `mlflow migrate-filestore --backend-store-uri mlruns --tracking-uri sqlite:///mlruns/mlflow.db`,
+> then point `--backend-store-uri` at `sqlite:///mlruns/mlflow.db`.
 
 ---
 
