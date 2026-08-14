@@ -186,7 +186,7 @@ Already provisioned and reused (no new resources are created):
 | Blob containers | `raw`, `silver`, `gold` | Raw inputs / outputs |
 | Datastore | `browser_analytics_storage` | Points at the `raw` container |
 | Container registry | workspace default ACR | Hosts the built environment image |
-| GitHub repo | `abishek-murugan/Time-Based-Browsing-Pattern-Analyzer` | Source-of-truth for the code (`main`) |
+| GitHub repo | `abishek-murugan/Intelligent-Browser-Behavior-Analytics-Platform` | Source-of-truth for the code (`main`) |
 
 The workspace's default Azure Container Registry is used automatically by
 managed environment builds — no extra ACR resource or credential is required.

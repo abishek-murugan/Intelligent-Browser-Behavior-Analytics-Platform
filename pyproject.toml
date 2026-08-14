@@ -38,7 +38,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/abishek-murugan/Time-Based-Browsing-Pattern-Analyzer"
+Homepage = "https://github.com/abishek-murugan/Intelligent-Browser-Behavior-Analytics-Platform"
 
 [dependency-groups]
 dev = [
